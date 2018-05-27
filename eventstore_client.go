@@ -28,21 +28,26 @@ type stats struct {
 
 func getStats() (*stats, error) {
 	serverStatsChan := get("/stats")
-	gossipStatsChan := get("/gossip")
 	projectionStatsChan := get("/projections/any")
 
 	serverStatsResult := <-serverStatsChan
-	gossipStatsResult := <-gossipStatsChan
-	projectionStatsResult := <-projectionStatsChan
-
 	if serverStatsResult.err != nil {
 		return nil, serverStatsResult.err
 	}
-	if gossipStatsResult.err != nil {
-		return nil, serverStatsResult.err
-	}
+
+	projectionStatsResult := <-projectionStatsChan
 	if projectionStatsResult.err != nil {
-		return nil, serverStatsResult.err
+		return nil, projectionStatsResult.err
+	}
+
+	gossipStatsResult := getResult{}
+	if(isInClusterMode()) {
+		gossipStatsChan := get("/gossip")
+
+		gossipStatsResult = <-gossipStatsChan
+		if gossipStatsResult.err != nil {
+			return nil, gossipStatsResult.err
+		}
 	}
 
 	return &stats{

@@ -20,7 +20,8 @@ var (
 	port    uint
 	verbose bool
 
-	eventStoreURL  string
+	eventStoreURL  	string
+	clusterMode		string
 )
 
 func serveLandingPage() {
@@ -44,19 +45,25 @@ func serveMetrics() {
 	http.Handle("/metrics", promhttp.Handler())
 }
 
-func readConfig() {
+func readAndValidateConfig() {
 	flag.StringVar(&eventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
 	flag.UintVar(&port, "port", 9999, "Port to expose scraping endpoint on")
 	flag.DurationVar(&timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
+	flag.StringVar(&clusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
 
 	flag.Parse()
 
+	if clusterMode != "cluster" && clusterMode != "single" {
+		log.Fatalf("Unknown cluster mode %v, use 'cluster' or 'single'", clusterMode)
+	}
+
 	log.WithFields(logrus.Fields{
 		"eventStoreURL": eventStoreURL,
-		"port":       port,
-		"timeout":    timeout,
-		"verbose":    verbose,
+		"port":       	port,
+		"timeout":    	timeout,
+		"verbose":    	verbose,
+		"clusterMode": 	clusterMode,
 	}).Infof("EventStore exporter configured")
 }
 
@@ -73,7 +80,7 @@ func startHTTPServer() {
 
 func main() {
 
-	readConfig()
+	readAndValidateConfig()
 	setupLogger()
 
 	initializeClient()
