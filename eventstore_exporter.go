@@ -47,7 +47,7 @@ func serveMetrics() {
 
 func readAndValidateConfig() {
 	flag.StringVar(&eventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
-	flag.UintVar(&port, "port", 9999, "Port to expose scraping endpoint on")
+	flag.UintVar(&port, "port", 9448, "Port to expose scraping endpoint on")
 	flag.DurationVar(&timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	flag.StringVar(&clusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")

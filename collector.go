@@ -114,13 +114,13 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 		e.diskIoWriteOps.Set(getDiskIoWriteOps(stats))
 		ch <- e.diskIoWriteOps
 
-		e.tcpConnections.Set(getTcpConnections(stats))
+		e.tcpConnections.Set(getTCPConnections(stats))
 		ch <- e.tcpConnections
 
-		e.tcpReceivedBytes.Set(getTcpReceivedBytes(stats))
+		e.tcpReceivedBytes.Set(getTCPReceivedBytes(stats))
 		ch <- e.tcpReceivedBytes
 
-		e.tcpSentBytes.Set(getTcpSentBytes(stats))
+		e.tcpSentBytes.Set(getTCPSentBytes(stats))
 		ch <- e.tcpSentBytes
 
 		e.clusterMemberIsMaster.Set(getIsMaster(stats))
@@ -264,17 +264,17 @@ func getDiskIoWriteOps(stats *stats) float64 {
 	return value
 }
 
-func getTcpSentBytes(stats *stats) float64 {
+func getTCPSentBytes(stats *stats) float64 {
 	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "sentBytesTotal")
 	return value
 }
 
-func getTcpReceivedBytes(stats *stats) float64 {
+func getTCPReceivedBytes(stats *stats) float64 {
 	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "receivedBytesTotal")
 	return value
 }
 
-func getTcpConnections(stats *stats) float64 {
+func getTCPConnections(stats *stats) float64 {
 	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "connections")
 	return value
 }
