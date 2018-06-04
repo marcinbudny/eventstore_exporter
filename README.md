@@ -92,7 +92,7 @@ eventstore_up 1
 
 ## Changelog
 
-### 0.1.0
+### 0.1.1
 
 * experimenting with dockerhub tags
 
