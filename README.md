@@ -61,9 +61,12 @@ eventstore_process_cpu 0.0843057
 # HELP eventstore_process_cpu_scaled Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores
 # TYPE eventstore_process_cpu_scaled gauge
 eventstore_process_cpu_scaled 0.04215285
-# HELP eventstore_projection_events_processed_after_restart Projection event processed count
-# TYPE eventstore_projection_events_processed_after_restart counter
-eventstore_projection_events_processed_after_restart{projection="$by_category"} 0
+# HELP eventstore_process_memory_bytes Process memory usage, as reported by EventStore
+# TYPE eventstore_process_memory_bytes gauge
+eventstore_process_memory_bytes 1.42651392e+08# HELP eventstore_projection_events_processed_after_restart Projection event processed count
+# HELP eventstore_projection_events_processed_after_restart_total Projection event processed count
+# TYPE eventstore_projection_events_processed_after_restart_total counter
+eventstore_projection_events_processed_after_restart_total{projection="$by_category"} 0
 # HELP eventstore_projection_progress Projection progress 0 - 1, where 1 = projection progress at 100%
 # TYPE eventstore_projection_progress gauge
 eventstore_projection_progress{projection="$by_category"} 1
@@ -91,6 +94,10 @@ eventstore_up 1
 ```
 
 ## Changelog
+
+### 0.2.0
+* FIX: missing `eventstore_process_memory_bytes` metric
+* BREAKING: `eventstore_projection_events_processed_after_restart` metric renamed to `eventstore_projection_events_processed_after_restart_total` to comply with Prometheus metric naming rules
 
 ### 0.1.1
 

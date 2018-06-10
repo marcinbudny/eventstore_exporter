@@ -40,7 +40,7 @@ func newExporter() *exporter {
 		up:                         			createGauge("up", "Whether the EventStore scrape was successful"),
 		processCPU:								createGauge("process_cpu", "Process CPU usage, 0 - number of cores"),
 		processCPUScaled:						createGauge("process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores"),
-		processMemoryBytes:						createGauge("process_memory_bytes", "Process memory usage"),
+		processMemoryBytes:						createGauge("process_memory_bytes", "Process memory usage, as reported by EventStore"),
 		diskIoReadBytes:						createCounter("disk_io_read_bytes", "Total number of disk IO read bytes"),
 		diskIoWrittenBytes:						createCounter("disk_io_written_bytes", "Total number of disk IO written bytes"),
 		diskIoReadOps:							createCounter("disk_io_read_ops", "Total number of disk IO read operations"),
@@ -53,7 +53,7 @@ func newExporter() *exporter {
 		queueItemsProcessed:					createItemCounterVec("queue_items_processed_total", "Total number items processed by queue", "queue"),
 		projectionRunning:						createItemGaugeVec("projection_running", "If 1, projection is in 'Running' state", "projection"),
 		projectionProgress:						createItemGaugeVec("projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", "projection"),
-		projectionEventsProcessedAfterRestart:	createItemCounterVec("projection_events_processed_after_restart", "Projection event processed count", "projection"),
+		projectionEventsProcessedAfterRestart:	createItemCounterVec("projection_events_processed_after_restart_total", "Projection event processed count", "projection"),
 		clusterMemberAlive:						createItemGaugeVec("cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", "member"),
 		clusterMemberIsMaster:					createGauge("cluster_member_is_master", "If 1, current cluster member is the master"),
 	}
@@ -101,6 +101,9 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 		e.processCPUScaled.Set(getProcessCPUScaled(stats))
 		ch <- e.processCPUScaled
+
+		e.processMemoryBytes.Set(getProcessMemory(stats))
+		ch <- e.processMemoryBytes
 
 		e.diskIoReadBytes.Set(getDiskIoReadBytes(stats))
 		ch <- e.diskIoReadBytes
