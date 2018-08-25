@@ -55,6 +55,12 @@ eventstore_disk_io_write_ops 78755
 # HELP eventstore_disk_io_written_bytes Total number of disk IO written bytes
 # TYPE eventstore_disk_io_written_bytes counter
 eventstore_disk_io_written_bytes 3.05152e+06
+# HELP eventstore_drive_available_bytes Drive available bytes
+# TYPE eventstore_drive_available_bytes gauge
+eventstore_drive_available_bytes{drive="/var/lib/eventstore"} 5.7287368704e+10
+# HELP eventstore_drive_total_bytes Drive total size in bytes
+# TYPE eventstore_drive_total_bytes gauge
+eventstore_drive_total_bytes{drive="/var/lib/eventstore"} 6.3143981056e+10
 # HELP eventstore_process_cpu Process CPU usage, 0 - number of cores
 # TYPE eventstore_process_cpu gauge
 eventstore_process_cpu 0.0843057
@@ -94,6 +100,9 @@ eventstore_up 1
 ```
 
 ## Changelog
+
+### 0.3.0
+* FEATURE: added drive metrics
 
 ### 0.2.0
 * FIX: missing `eventstore_process_memory_bytes` metric

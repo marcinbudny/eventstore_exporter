@@ -26,6 +26,8 @@ type exporter struct {
 	tcpConnections							prometheus.Gauge
 	queueLength								*prometheus.GaugeVec
 	queueItemsProcessed						*prometheus.CounterVec
+	driveTotalBytes							*prometheus.GaugeVec
+	driveAvailableBytes						*prometheus.GaugeVec
 	projectionRunning						*prometheus.GaugeVec
 	projectionProgress						*prometheus.GaugeVec
 	projectionEventsProcessedAfterRestart	*prometheus.CounterVec
@@ -51,6 +53,8 @@ func newExporter() *exporter {
 		tcpConnections:							createGauge("tcp_connections", "Current number of TCP connections"),
 		queueLength:							createItemGaugeVec("queue_length", "Queue length", "queue"),
 		queueItemsProcessed:					createItemCounterVec("queue_items_processed_total", "Total number items processed by queue", "queue"),
+		driveTotalBytes:						createItemGaugeVec("drive_total_bytes", "Drive total size in bytes", "drive"),
+		driveAvailableBytes:					createItemGaugeVec("drive_available_bytes", "Drive available bytes", "drive"),
 		projectionRunning:						createItemGaugeVec("projection_running", "If 1, projection is in 'Running' state", "projection"),
 		projectionProgress:						createItemGaugeVec("projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", "projection"),
 		projectionEventsProcessedAfterRestart:	createItemCounterVec("projection_events_processed_after_restart_total", "Projection event processed count", "projection"),
@@ -74,6 +78,8 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	
 	e.queueLength.Describe(ch)
 	e.queueItemsProcessed.Describe(ch)
+	e.driveTotalBytes.Describe(ch)
+	e.driveAvailableBytes.Describe(ch)
 	e.projectionRunning.Describe(ch)
 	e.projectionProgress.Describe(ch)
 	e.projectionEventsProcessedAfterRestart.Describe(ch)
@@ -131,6 +137,9 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 		collectPerQueueGauge(stats, e.queueLength, getQueueLength, ch)
 		collectPerQueueCounter(stats, e.queueItemsProcessed, getQueueItemsProcessed, ch)
+
+		collectPerDriveGauge(stats, e.driveTotalBytes, getDriveTotalBytes, ch)
+		collectPerDriveGauge(stats, e.driveAvailableBytes, getDriveAvailableBytes, ch)
 
 		collectPerProjectionGauge(stats, e.projectionRunning, getProjectionIsRunning, ch)
 		collectPerProjectionGauge(stats, e.projectionProgress, getProjectionProgress, ch)
@@ -198,8 +207,6 @@ func getProjectionEventsProcessedAfterRestart(projection []byte) float64 {
 	return processed
 }
 
-
-
 func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
@@ -229,6 +236,27 @@ func getQueueLength(queue []byte) float64 {
 
 func getQueueItemsProcessed(queue []byte) float64 {
 	value, _ := jp.GetFloat(queue, "totalItemsProcessed")
+	return value
+}
+
+func collectPerDriveGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
+        drive := string(key)
+		vec.WithLabelValues(drive).Set(collectFunc(value))
+		return nil
+	}, "sys", "drive")
+
+	vec.Collect(ch)
+}
+
+func getDriveTotalBytes(drive []byte) float64 {
+	value, _ := jp.GetFloat(drive, "totalBytes")
+	return value
+}
+
+func getDriveAvailableBytes(drive []byte) float64 {
+	value, _ := jp.GetFloat(drive, "availableBytes")
 	return value
 }
 
