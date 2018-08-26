@@ -32,6 +32,12 @@ The exporter can be configured with commandline arguments, environment variables
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
 |--verbose|VERBOSE|false|Enable verbose logging|
 
+## Grafana dashboard
+
+Can be found [here](https://grafana.com/dashboards/7673)
+
+![EventStore Grafana dashboard](dashboard.png)
+
 ## Exported metrics
 
 Let me know if there is a metric you would like to be added.
