@@ -3,7 +3,7 @@ version: "3"
 services:
 
   eventstore1:
-   image: eventstore/eventstore:release-4.1.0
+   image: eventstore/eventstore:release-4.1.1-hotfix1
    env_file:
      - common-variables.env
    environment:
@@ -22,7 +22,7 @@ services:
        ipv4_address: 172.16.0.11
        
   eventstore2:
-   image: eventstore/eventstore:release-4.1.0
+   image: eventstore/eventstore:release-4.1.1-hotfix1
    env_file:
      - common-variables.env
    environment:
@@ -41,7 +41,7 @@ services:
        ipv4_address: 172.16.0.12
    
   eventstore3:
-   image: eventstore/eventstore:release-4.1.0
+   image: eventstore/eventstore:release-4.1.1-hotfix1
    env_file:
      - common-variables.env
    environment:

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
+
 	jp "github.com/buger/jsonparser"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -12,54 +13,72 @@ const (
 )
 
 type exporter struct {
-	up                          			prometheus.Gauge
-	processCPU								prometheus.Gauge
-	processCPUScaled						prometheus.Gauge
-	processMemoryBytes						prometheus.Gauge
-	diskIoReadBytes							prometheus.Counter
-	diskIoWrittenBytes						prometheus.Counter
-	diskIoReadOps							prometheus.Counter
-	diskIoWriteOps							prometheus.Counter
-	uptimeSeconds							prometheus.Counter
-	tcpSentBytes							prometheus.Counter
-	tcpReceivedBytes						prometheus.Counter
-	tcpConnections							prometheus.Gauge
-	queueLength								*prometheus.GaugeVec
-	queueItemsProcessed						*prometheus.CounterVec
-	driveTotalBytes							*prometheus.GaugeVec
-	driveAvailableBytes						*prometheus.GaugeVec
-	projectionRunning						*prometheus.GaugeVec
-	projectionProgress						*prometheus.GaugeVec
-	projectionEventsProcessedAfterRestart	*prometheus.CounterVec
-	clusterMemberAlive						*prometheus.GaugeVec
-	clusterMemberIsMaster					prometheus.Gauge
+	up                 prometheus.Gauge
+	processCPU         prometheus.Gauge
+	processCPUScaled   prometheus.Gauge
+	processMemoryBytes prometheus.Gauge
+	diskIoReadBytes    prometheus.Counter
+	diskIoWrittenBytes prometheus.Counter
+	diskIoReadOps      prometheus.Counter
+	diskIoWriteOps     prometheus.Counter
+	uptimeSeconds      prometheus.Counter
+	tcpSentBytes       prometheus.Counter
+	tcpReceivedBytes   prometheus.Counter
+	tcpConnections     prometheus.Gauge
+
+	queueLength         *prometheus.GaugeVec
+	queueItemsProcessed *prometheus.CounterVec
+
+	driveTotalBytes     *prometheus.GaugeVec
+	driveAvailableBytes *prometheus.GaugeVec
+
+	projectionRunning                     *prometheus.GaugeVec
+	projectionProgress                    *prometheus.GaugeVec
+	projectionEventsProcessedAfterRestart *prometheus.CounterVec
+
+	clusterMemberAlive    *prometheus.GaugeVec
+	clusterMemberIsMaster prometheus.Gauge
+
+	subscriptionTotalItemsProcessed      *prometheus.CounterVec
+	subscriptionLastProcessedEventNumber *prometheus.GaugeVec
+	subscriptionLastKnownEventNumber     *prometheus.GaugeVec
+	subscriptionConnectionCount          *prometheus.GaugeVec
+	subscriptionTotalInFlightMessages    *prometheus.GaugeVec
 }
 
-
-
 func newExporter() *exporter {
-	return &exporter {
-		up:                         			createGauge("up", "Whether the EventStore scrape was successful"),
-		processCPU:								createGauge("process_cpu", "Process CPU usage, 0 - number of cores"),
-		processCPUScaled:						createGauge("process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores"),
-		processMemoryBytes:						createGauge("process_memory_bytes", "Process memory usage, as reported by EventStore"),
-		diskIoReadBytes:						createCounter("disk_io_read_bytes", "Total number of disk IO read bytes"),
-		diskIoWrittenBytes:						createCounter("disk_io_written_bytes", "Total number of disk IO written bytes"),
-		diskIoReadOps:							createCounter("disk_io_read_ops", "Total number of disk IO read operations"),
-		diskIoWriteOps:							createCounter("disk_io_write_ops", "Total number of disk IO write operations"),
-		uptimeSeconds:							createCounter("uptime_seconds", "Total uptime seconds"),
-		tcpSentBytes:							createCounter("tcp_sent_bytes", "TCP sent bytes"),
-		tcpReceivedBytes:						createCounter("tcp_received_bytes", "TCP received bytes"),
-		tcpConnections:							createGauge("tcp_connections", "Current number of TCP connections"),
-		queueLength:							createItemGaugeVec("queue_length", "Queue length", "queue"),
-		queueItemsProcessed:					createItemCounterVec("queue_items_processed_total", "Total number items processed by queue", "queue"),
-		driveTotalBytes:						createItemGaugeVec("drive_total_bytes", "Drive total size in bytes", "drive"),
-		driveAvailableBytes:					createItemGaugeVec("drive_available_bytes", "Drive available bytes", "drive"),
-		projectionRunning:						createItemGaugeVec("projection_running", "If 1, projection is in 'Running' state", "projection"),
-		projectionProgress:						createItemGaugeVec("projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", "projection"),
-		projectionEventsProcessedAfterRestart:	createItemCounterVec("projection_events_processed_after_restart_total", "Projection event processed count", "projection"),
-		clusterMemberAlive:						createItemGaugeVec("cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", "member"),
-		clusterMemberIsMaster:					createGauge("cluster_member_is_master", "If 1, current cluster member is the master"),
+	return &exporter{
+		up:                 createGauge("up", "Whether the EventStore scrape was successful"),
+		processCPU:         createGauge("process_cpu", "Process CPU usage, 0 - number of cores"),
+		processCPUScaled:   createGauge("process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores"),
+		processMemoryBytes: createGauge("process_memory_bytes", "Process memory usage, as reported by EventStore"),
+		diskIoReadBytes:    createCounter("disk_io_read_bytes", "Total number of disk IO read bytes"),
+		diskIoWrittenBytes: createCounter("disk_io_written_bytes", "Total number of disk IO written bytes"),
+		diskIoReadOps:      createCounter("disk_io_read_ops", "Total number of disk IO read operations"),
+		diskIoWriteOps:     createCounter("disk_io_write_ops", "Total number of disk IO write operations"),
+		uptimeSeconds:      createCounter("uptime_seconds", "Total uptime seconds"),
+		tcpSentBytes:       createCounter("tcp_sent_bytes", "TCP sent bytes"),
+		tcpReceivedBytes:   createCounter("tcp_received_bytes", "TCP received bytes"),
+		tcpConnections:     createGauge("tcp_connections", "Current number of TCP connections"),
+
+		queueLength:         createItemGaugeVec("queue_length", "Queue length", []string{"queue"}),
+		queueItemsProcessed: createItemCounterVec("queue_items_processed_total", "Total number items processed by queue", []string{"queue"}),
+
+		driveTotalBytes:     createItemGaugeVec("drive_total_bytes", "Drive total size in bytes", []string{"drive"}),
+		driveAvailableBytes: createItemGaugeVec("drive_available_bytes", "Drive available bytes", []string{"drive"}),
+
+		projectionRunning:                     createItemGaugeVec("projection_running", "If 1, projection is in 'Running' state", []string{"projection"}),
+		projectionProgress:                    createItemGaugeVec("projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", []string{"projection"}),
+		projectionEventsProcessedAfterRestart: createItemCounterVec("projection_events_processed_after_restart_total", "Projection event processed count", []string{"projection"}),
+
+		clusterMemberAlive:    createItemGaugeVec("cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", []string{"member"}),
+		clusterMemberIsMaster: createGauge("cluster_member_is_master", "If 1, current cluster member is the master"),
+
+		subscriptionTotalItemsProcessed:      createItemCounterVec("subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}),
+		subscriptionLastProcessedEventNumber: createItemGaugeVec("subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}),
+		subscriptionLastKnownEventNumber:     createItemGaugeVec("subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}),
+		subscriptionConnectionCount:          createItemGaugeVec("subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}),
+		subscriptionTotalInFlightMessages:    createItemGaugeVec("subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}),
 	}
 }
 
@@ -75,7 +94,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.tcpSentBytes.Desc()
 	ch <- e.tcpReceivedBytes.Desc()
 	ch <- e.tcpConnections.Desc()
-	
+
 	e.queueLength.Describe(ch)
 	e.queueItemsProcessed.Describe(ch)
 	e.driveTotalBytes.Describe(ch)
@@ -83,8 +102,8 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.projectionRunning.Describe(ch)
 	e.projectionProgress.Describe(ch)
 	e.projectionEventsProcessedAfterRestart.Describe(ch)
-	
-	if(isInClusterMode()) {
+
+	if isInClusterMode() {
 		e.clusterMemberAlive.Describe(ch)
 		ch <- e.clusterMemberIsMaster.Desc()
 	}
@@ -113,7 +132,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 		e.diskIoReadBytes.Set(getDiskIoReadBytes(stats))
 		ch <- e.diskIoReadBytes
-		
+
 		e.diskIoWrittenBytes.Set(getDiskIoWrittenBytes(stats))
 		ch <- e.diskIoWrittenBytes
 
@@ -146,6 +165,12 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 		collectPerProjectionCounter(stats, e.projectionEventsProcessedAfterRestart, getProjectionEventsProcessedAfterRestart, ch)
 
 		collectPerMemberGauge(stats, e.clusterMemberAlive, getMemberIsAlive, ch)
+
+		collectPerSubscriptionCounter(stats, e.subscriptionTotalItemsProcessed, getSubscriptionTotalItemsProcessed, ch)
+		collectPerSubscriptionGauge(stats, e.subscriptionConnectionCount, getSubscriptionConnectionCount, ch)
+		collectPerSubscriptionGauge(stats, e.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
+		collectPerSubscriptionGauge(stats, e.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
+		collectPerSubscriptionGauge(stats, e.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
 	}
 }
 
@@ -210,7 +235,7 @@ func getProjectionEventsProcessedAfterRestart(projection []byte) float64 {
 func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
-        queueName := string(key)
+		queueName := string(key)
 		vec.WithLabelValues(queueName).Set(collectFunc(value))
 		return nil
 	}, "es", "queue")
@@ -221,7 +246,7 @@ func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc fu
 func collectPerQueueCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
-        queueName := string(key)
+		queueName := string(key)
 		vec.WithLabelValues(queueName).Set(collectFunc(value))
 		return nil
 	}, "es", "queue")
@@ -242,7 +267,7 @@ func getQueueItemsProcessed(queue []byte) float64 {
 func collectPerDriveGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
-        drive := string(key)
+		drive := string(key)
 		vec.WithLabelValues(drive).Set(collectFunc(value))
 		return nil
 	}, "sys", "drive")
@@ -260,13 +285,60 @@ func getDriveAvailableBytes(drive []byte) float64 {
 	return value
 }
 
+func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
+		eventStreamId, _ := jp.GetString(value, "eventStreamId")
+		groupName, _ := jp.GetString(value, "groupName")
+		vec.WithLabelValues(eventStreamId, groupName).Set(collectFunc(value))
+	})
+
+	vec.Collect(ch)
+}
+
+func collectPerSubscriptionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
+		eventStreamId, _ := jp.GetString(value, "eventStreamId")
+		groupName, _ := jp.GetString(value, "groupName")
+		vec.WithLabelValues(eventStreamId, groupName).Set(collectFunc(value))
+	})
+
+	vec.Collect(ch)
+}
+
+func getSubscriptionTotalItemsProcessed(subscription []byte) float64 {
+	value, _ := jp.GetFloat(subscription, "totalItemsProcessed")
+	return value
+}
+
+func getSubscriptionConnectionCount(subscription []byte) float64 {
+	value, _ := jp.GetFloat(subscription, "connectionCount")
+	return value
+}
+
+func getSubscriptionLastProcessedEventNumber(subscription []byte) float64 {
+	value, _ := jp.GetFloat(subscription, "lastProcessedEventNumber")
+	return value
+}
+
+func getSubscriptionLastKnownEventNumber(subscription []byte) float64 {
+	value, _ := jp.GetFloat(subscription, "lastKnownEventNumber")
+	return value
+}
+
+func getSubscriptionTotalInFlightMessages(subscription []byte) float64 {
+	value, _ := jp.GetFloat(subscription, "totalInFlightMessages")
+	return value
+}
+
 func getProcessCPU(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpu") 
+	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpu")
 	return value / 100.0
 }
 
 func getProcessCPUScaled(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpuScaled") 
+	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpuScaled")
 	return value / 100.0
 }
 
@@ -327,13 +399,13 @@ func createGauge(name string, help string) prometheus.Gauge {
 	})
 }
 
-func createItemGaugeVec(name string, help string, itemLabelName string) *prometheus.GaugeVec {
+func createItemGaugeVec(name string, help string, itemLabels []string) *prometheus.GaugeVec {
 	return prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Subsystem: subsystem,
 		Name:      name,
 		Help:      help,
-	}, []string{itemLabelName})
+	}, itemLabels)
 }
 
 func createCounter(name string, help string) prometheus.Counter {
@@ -345,13 +417,13 @@ func createCounter(name string, help string) prometheus.Counter {
 	})
 }
 
-func createItemCounterVec(name string, help string, itemLabelName string) *prometheus.CounterVec {
+func createItemCounterVec(name string, help string, itemLabels []string) *prometheus.CounterVec {
 	return prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Subsystem: subsystem,
 		Name:      name,
 		Help:      help,
-	}, []string{itemLabelName})
+	}, itemLabels)
 }
 
 func isInClusterMode() bool {

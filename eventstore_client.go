@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net/http"
 	"io/ioutil"
+	"net/http"
 )
 
 var (
@@ -11,7 +11,7 @@ var (
 
 func initializeClient() {
 	client = http.Client{
-		Timeout:   timeout,
+		Timeout: timeout,
 	}
 }
 
@@ -21,16 +21,18 @@ type getResult struct {
 }
 
 type stats struct {
-	serverStats		[]byte
-	gossipStats		[]byte
-	projectionStats	[]byte
-	info			[]byte
+	serverStats        []byte
+	gossipStats        []byte
+	projectionStats    []byte
+	info               []byte
+	subscriptionsStats []byte
 }
 
 func getStats() (*stats, error) {
 	serverStatsChan := get("/stats")
 	projectionStatsChan := get("/projections/all-non-transient")
 	infoChan := get("/info")
+	subscriptionsStatsChan := get("/subscriptions")
 
 	serverStatsResult := <-serverStatsChan
 	if serverStatsResult.err != nil {
@@ -47,8 +49,13 @@ func getStats() (*stats, error) {
 		return nil, infoResult.err
 	}
 
+	subscriptionsStatsResult := <-subscriptionsStatsChan
+	if subscriptionsStatsResult.err != nil {
+		return nil, subscriptionsStatsResult.err
+	}
+
 	gossipStatsResult := getResult{}
-	if(isInClusterMode()) {
+	if isInClusterMode() {
 		gossipStatsChan := get("/gossip")
 
 		gossipStatsResult = <-gossipStatsChan
@@ -62,10 +69,11 @@ func getStats() (*stats, error) {
 		gossipStatsResult.result,
 		projectionStatsResult.result,
 		infoResult.result,
+		subscriptionsStatsResult.result,
 	}, nil
 }
 
-func get(path string) (<-chan getResult) {
+func get(path string) <-chan getResult {
 	url := eventStoreURL + path
 
 	result := make(chan getResult)
@@ -75,18 +83,18 @@ func get(path string) (<-chan getResult) {
 
 		response, err := client.Get(url)
 		if err != nil {
-			result <- getResult { nil, err }
+			result <- getResult{nil, err}
 			return
 		}
 		defer response.Body.Close()
 
 		buf, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			result <- getResult { nil, err }
+			result <- getResult{nil, err}
 			return
 		}
 
-		result <- getResult { buf, nil }
+		result <- getResult{buf, nil}
 	}()
 
 	return result

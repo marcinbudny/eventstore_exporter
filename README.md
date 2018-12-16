@@ -103,9 +103,26 @@ eventstore_tcp_sent_bytes 453630
 # HELP eventstore_up Whether the EventStore scrape was successful
 # TYPE eventstore_up gauge
 eventstore_up 1
+# HELP eventstore_subscription_connections Number of connections to subscription
+# TYPE eventstore_subscription_connections gauge
+eventstore_subscription_connections{event_stream_id="test-stream",group_name="group1"} 0
+# HELP eventstore_subscription_items_processed_total Total items processed by subscription
+# TYPE eventstore_subscription_items_processed_total counter
+eventstore_subscription_items_processed_total{event_stream_id="test-stream",group_name="group1"} 198
+# HELP eventstore_subscription_last_known_event_number Last known event number in subscription
+# TYPE eventstore_subscription_last_known_event_number gauge
+eventstore_subscription_last_known_event_number{event_stream_id="test-stream",group_name="group1"} 1145
+# HELP eventstore_subscription_last_processed_event_number Last event number processed by subscription
+# TYPE eventstore_subscription_last_processed_event_number gauge
+eventstore_subscription_last_processed_event_number{event_stream_id="test-stream",group_name="group1"} 1135
+# HELP eventstore_subscription_messages_in_flight Number of messages in flight for subscription
+# TYPE eventstore_subscription_messages_in_flight gauge
 ```
 
 ## Changelog
+
+### 0.4.0
+* FEATURE: persistent subscription metrics
 
 ### 0.3.0
 * FEATURE: added drive metrics
