@@ -38,6 +38,8 @@ type exporter struct {
 
 	clusterMemberAlive    *prometheus.GaugeVec
 	clusterMemberIsMaster prometheus.Gauge
+	clusterMemberIsSlave  prometheus.Gauge
+	clusterMemberIsClone  prometheus.Gauge
 
 	subscriptionTotalItemsProcessed      *prometheus.CounterVec
 	subscriptionLastProcessedEventNumber *prometheus.GaugeVec
@@ -73,6 +75,8 @@ func newExporter() *exporter {
 
 		clusterMemberAlive:    createItemGaugeVec("cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", []string{"member"}),
 		clusterMemberIsMaster: createGauge("cluster_member_is_master", "If 1, current cluster member is the master"),
+		clusterMemberIsSlave:  createGauge("cluster_member_is_slave", "If 1, current cluster member is a slave"),
+		clusterMemberIsClone:  createGauge("cluster_member_is_clone", "If 1, current cluster member is a clone"),
 
 		subscriptionTotalItemsProcessed:      createItemCounterVec("subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}),
 		subscriptionLastProcessedEventNumber: createItemGaugeVec("subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}),
@@ -105,7 +109,10 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 
 	if isInClusterMode() {
 		e.clusterMemberAlive.Describe(ch)
+
 		ch <- e.clusterMemberIsMaster.Desc()
+		ch <- e.clusterMemberIsSlave.Desc()
+		ch <- e.clusterMemberIsClone.Desc()
 	}
 }
 
@@ -153,6 +160,12 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 		e.clusterMemberIsMaster.Set(getIsMaster(stats))
 		ch <- e.clusterMemberIsMaster
+
+		e.clusterMemberIsSlave.Set(getIsSlave(stats))
+		ch <- e.clusterMemberIsSlave
+
+		e.clusterMemberIsClone.Set(getIsClone(stats))
+		ch <- e.clusterMemberIsClone
 
 		collectPerQueueGauge(stats, e.queueLength, getQueueLength, ch)
 		collectPerQueueCounter(stats, e.queueItemsProcessed, getQueueItemsProcessed, ch)
@@ -383,8 +396,20 @@ func getTCPConnections(stats *stats) float64 {
 }
 
 func getIsMaster(stats *stats) float64 {
+	return getIs("master", stats)
+}
+
+func getIsSlave(stats *stats) float64 {
+	return getIs("slave", stats)
+}
+
+func getIsClone(stats *stats) float64 {
+	return getIs("clone", stats)
+}
+
+func getIs(status string, stats *stats) float64 {
 	value, _ := jp.GetString(stats.info, "state")
-	if value == "master" {
+	if value == status {
 		return 1
 	}
 	return 0

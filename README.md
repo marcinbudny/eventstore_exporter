@@ -49,6 +49,12 @@ eventstore_cluster_member_alive{member="127.0.0.1:2113"} 1
 # HELP eventstore_cluster_member_is_master If 1, current cluster member is the master
 # TYPE eventstore_cluster_member_is_master gauge
 eventstore_cluster_member_is_master 0
+# HELP eventstore_cluster_member_is_slave If 1, current cluster member is a slave
+# TYPE eventstore_cluster_member_is_slave gauge
+eventstore_cluster_member_is_slave 1
+# HELP eventstore_cluster_member_is_clone If 1, current cluster member is a clone
+# TYPE eventstore_cluster_member_is_clone gauge
+eventstore_cluster_member_is_master 0
 # HELP eventstore_disk_io_read_bytes Total number of disk IO read bytes
 # TYPE eventstore_disk_io_read_bytes counter
 eventstore_disk_io_read_bytes 2.146304e+06
@@ -120,6 +126,9 @@ eventstore_subscription_last_processed_event_number{event_stream_id="test-stream
 ```
 
 ## Changelog
+
+### 0.5.0
+* FEATURE: new metrics for detecting cluster node status: `eventstore_cluster_member_is_slave` and `eventstore_cluster_member_is_clone`
 
 ### 0.4.0
 * FEATURE: persistent subscription metrics

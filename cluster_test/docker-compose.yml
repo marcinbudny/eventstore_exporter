@@ -26,7 +26,7 @@ services:
    env_file:
      - common-variables.env
    environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112
+     - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112,172.16.0.14:2112
      - EVENTSTORE_NODE_PRIORITY=2
      - EVENTSTORE_INT_IP=172.16.0.12    
      - EVENTSTORE_EXT_HTTP_PORT=2123
@@ -45,7 +45,7 @@ services:
    env_file:
      - common-variables.env
    environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.13:2112
+     - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.13:2112,172.16.0.14:2112
      - EVENTSTORE_NODE_PRIORITY=1
      - EVENTSTORE_INT_IP=172.16.0.13
      - EVENTSTORE_EXT_HTTP_PORT=2133
@@ -59,6 +59,51 @@ services:
      clusternetwork:
        ipv4_address: 172.16.0.13
 
+  eventstore4:
+   image: eventstore/eventstore:release-4.1.1-hotfix1
+   env_file:
+     - common-variables.env
+   environment:
+     - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.12:2112,172.16.0.13:2112
+     - EVENTSTORE_NODE_PRIORITY=1
+     - EVENTSTORE_INT_IP=172.16.0.14
+     - EVENTSTORE_EXT_HTTP_PORT=2143
+     - EVENTSTORE_EXT_TCP_PORT=1143
+     - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2143/
+   ports:
+     - 1143:1143
+     - 2143:2143
+   restart: unless-stopped
+   networks:
+     clusternetwork:
+       ipv4_address: 172.16.0.14
+
+  prometheus:
+    image: prom/prometheus:v2.4.3
+    command:
+    - --storage.tsdb.path=/prometheus
+    - --storage.tsdb.retention=30d
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --web.enable-lifecycle
+    - --web.enable-admin-api
+    volumes:
+    - ./prometheus-config:/etc/prometheus/
+    ports:
+    - 9090:9090
+
+  grafana:
+    image: grafana/grafana:5.4.3
+    depends_on:
+    - prometheus
+    environment:
+    - GF_AUTH_ANONYMOUS_ENABLED=true
+    - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+    - grafana-volume:/var/lib/grafana
+    ports:
+    - 3000:3000
+
+
 networks:
   clusternetwork:
     driver: bridge
@@ -66,3 +111,6 @@ networks:
       driver: default
       config:
       - subnet: 172.16.0.0/24
+
+volumes:
+  grafana-volume:
