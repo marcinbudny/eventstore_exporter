@@ -20,8 +20,10 @@ var (
 	port    uint
 	verbose bool
 
-	eventStoreURL  	string
-	clusterMode		string
+	eventStoreURL      string
+	eventStoreUser     string
+	eventStorePassword string
+	clusterMode        string
 )
 
 func serveLandingPage() {
@@ -47,6 +49,8 @@ func serveMetrics() {
 
 func readAndValidateConfig() {
 	flag.StringVar(&eventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
+	flag.StringVar(&eventStoreUser, "eventstore-user", "admin", "EventStore User")
+	flag.StringVar(&eventStorePassword, "eventstore-password", "changeit", "EventStore Password")
 	flag.UintVar(&port, "port", 9448, "Port to expose scraping endpoint on")
 	flag.DurationVar(&timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
@@ -60,6 +64,7 @@ func readAndValidateConfig() {
 
 	log.WithFields(logrus.Fields{
 		"eventStoreURL": eventStoreURL,
+		"eventStoreUser": eventStoreUser,
 		"port":       	port,
 		"timeout":    	timeout,
 		"verbose":    	verbose,

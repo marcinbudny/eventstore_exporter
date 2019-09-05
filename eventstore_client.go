@@ -81,7 +81,10 @@ func get(path string) <-chan getResult {
 	go func() {
 		log.WithField("url", url).Debug("GET request to EventStore")
 
-		response, err := client.Get(url)
+		client := &http.Client{}
+		req, err := http.NewRequest("GET", url, nil)
+		req.SetBasicAuth(eventStoreUser, eventStorePassword)
+		response, err := client.Do(req)
 		if err != nil {
 			result <- getResult{nil, err}
 			return

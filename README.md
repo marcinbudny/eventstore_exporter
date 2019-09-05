@@ -27,6 +27,8 @@ The exporter can be configured with commandline arguments, environment variables
 |Flag|ENV variable|Default|Meaning|
 |---|---|---|---|
 |--eventstore-url|EVENTSTORE_URL|http://localhost:2113|Eventstore HTTP endpoint|
+|--eventstore-user|EVENTSTORE_USER|admin|Eventstore user|
+|--eventstore-password|EVENTSTORE_PASSWORD|changeit|Eventstore password|
 |--cluster-mode|CLUSTER_MODE|cluster|Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster. This settings decides whether gossip stats endpoint is queired.|
 |--port|PORT|9448|Port to expose scrape endpoint on|
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
