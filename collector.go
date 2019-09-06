@@ -301,9 +301,9 @@ func getDriveAvailableBytes(drive []byte) float64 {
 func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		eventStreamId, _ := jp.GetString(value, "eventStreamId")
+		eventStreamID, _ := jp.GetString(value, "eventStreamId")
 		groupName, _ := jp.GetString(value, "groupName")
-		vec.WithLabelValues(eventStreamId, groupName).Set(collectFunc(value))
+		vec.WithLabelValues(eventStreamID, groupName).Set(collectFunc(value))
 	})
 
 	vec.Collect(ch)
@@ -312,9 +312,9 @@ func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, col
 func collectPerSubscriptionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
 	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		eventStreamId, _ := jp.GetString(value, "eventStreamId")
+		eventStreamID, _ := jp.GetString(value, "eventStreamId")
 		groupName, _ := jp.GetString(value, "groupName")
-		vec.WithLabelValues(eventStreamId, groupName).Set(collectFunc(value))
+		vec.WithLabelValues(eventStreamID, groupName).Set(collectFunc(value))
 	})
 
 	vec.Collect(ch)

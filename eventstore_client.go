@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -82,13 +83,19 @@ func get(path string) <-chan getResult {
 		log.WithField("url", url).Debug("GET request to EventStore")
 
 		req, err := http.NewRequest("GET", url, nil)
-		req.SetBasicAuth(eventStoreUser, eventStorePassword)
+		if eventStoreUser != "" && eventStorePassword != "" {
+			req.SetBasicAuth(eventStoreUser, eventStorePassword)
+		}
 		response, err := client.Do(req)
 		if err != nil {
 			result <- getResult{nil, err}
 			return
 		}
 		defer response.Body.Close()
+
+		if response.StatusCode >= 400 {
+			result <- getResult{nil, fmt.Errorf("HTTP call to %s resulted in status code %d", url, response.StatusCode)}
+		}
 
 		buf, err := ioutil.ReadAll(response.Body)
 		if err != nil {

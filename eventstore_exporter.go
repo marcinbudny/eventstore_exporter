@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-	
+
 	"github.com/namsral/flag"
 
 	"github.com/sirupsen/logrus"
@@ -49,8 +49,8 @@ func serveMetrics() {
 
 func readAndValidateConfig() {
 	flag.StringVar(&eventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
-	flag.StringVar(&eventStoreUser, "eventstore-user", "admin", "EventStore User")
-	flag.StringVar(&eventStorePassword, "eventstore-password", "changeit", "EventStore Password")
+	flag.StringVar(&eventStoreUser, "eventstore-user", "", "EventStore User")
+	flag.StringVar(&eventStorePassword, "eventstore-password", "", "EventStore Password")
 	flag.UintVar(&port, "port", 9448, "Port to expose scraping endpoint on")
 	flag.DurationVar(&timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
@@ -62,13 +62,17 @@ func readAndValidateConfig() {
 		log.Fatalf("Unknown cluster mode %v, use 'cluster' or 'single'", clusterMode)
 	}
 
+	if (eventStoreUser != "" && eventStorePassword == "") || (eventStoreUser == "" && eventStorePassword != "") {
+		log.Fatal("EventStore user and password should both be specified, or should both be empty")
+	}
+
 	log.WithFields(logrus.Fields{
-		"eventStoreURL": eventStoreURL,
+		"eventStoreURL":  eventStoreURL,
 		"eventStoreUser": eventStoreUser,
-		"port":       	port,
-		"timeout":    	timeout,
-		"verbose":    	verbose,
-		"clusterMode": 	clusterMode,
+		"port":           port,
+		"timeout":        timeout,
+		"verbose":        verbose,
+		"clusterMode":    clusterMode,
 	}).Infof("EventStore exporter configured")
 }
 
@@ -95,4 +99,3 @@ func main() {
 
 	startHTTPServer()
 }
-

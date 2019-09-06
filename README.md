@@ -27,8 +27,8 @@ The exporter can be configured with commandline arguments, environment variables
 |Flag|ENV variable|Default|Meaning|
 |---|---|---|---|
 |--eventstore-url|EVENTSTORE_URL|http://localhost:2113|Eventstore HTTP endpoint|
-|--eventstore-user|EVENTSTORE_USER|admin|Eventstore user|
-|--eventstore-password|EVENTSTORE_PASSWORD|changeit|Eventstore password|
+|--eventstore-user|EVENTSTORE_USER|(empty)|Eventstore user (if not specified, basic auth is not used)|
+|--eventstore-password|EVENTSTORE_PASSWORD|(empty)|Eventstore password  (if not specified, basic auth is not used)|
 |--cluster-mode|CLUSTER_MODE|cluster|Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster. This settings decides whether gossip stats endpoint is queired.|
 |--port|PORT|9448|Port to expose scrape endpoint on|
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
@@ -128,6 +128,10 @@ eventstore_subscription_last_processed_event_number{event_stream_id="test-stream
 ```
 
 ## Changelog
+
+### 0.6.0
+* FEATURE: add HTTP Basic auth to support EventStore 5.0.2+ (see #6)
+* FIX: when status code of http call does not indicate success, the exporter will now log a message and it won't report metrics
 
 ### 0.5.0
 * FEATURE: new metrics for detecting cluster node status: `eventstore_cluster_member_is_slave` and `eventstore_cluster_member_is_clone`
