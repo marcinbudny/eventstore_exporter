@@ -209,6 +209,9 @@ func getMemberIsAlive(member []byte) float64 {
 
 func collectPerProjectionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
+	// Reset before collection to ensure we remove Projections that have been deleted
+	vec.Reset()
+
 	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
 		projectionName, _ := jp.GetString(value, "effectiveName")
 		vec.WithLabelValues(projectionName).Set(collectFunc(value))
@@ -218,6 +221,9 @@ func collectPerProjectionGauge(stats *stats, vec *prometheus.GaugeVec, collectFu
 }
 
 func collectPerProjectionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	// Reset before collection to ensure we remove Projections that have been deleted
+	vec.Reset()
 
 	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
 		projectionName, _ := jp.GetString(value, "effectiveName")
