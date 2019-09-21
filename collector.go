@@ -189,6 +189,9 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 func collectPerMemberGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
+
 	jp.ArrayEach(stats.gossipStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
 		externalHTTPIp, _ := jp.GetString(value, "externalHttpIp")
 		externalHTTPPort, _ := jp.GetInt(value, "externalHttpPort")
@@ -209,7 +212,7 @@ func getMemberIsAlive(member []byte) float64 {
 
 func collectPerProjectionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
-	// Reset before collection to ensure we remove Projections that have been deleted
+	// Reset before collection to ensure we remove items that have been deleted
 	vec.Reset()
 
 	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
@@ -222,7 +225,7 @@ func collectPerProjectionGauge(stats *stats, vec *prometheus.GaugeVec, collectFu
 
 func collectPerProjectionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
-	// Reset before collection to ensure we remove Projections that have been deleted
+	// Reset before collection to ensure we remove items that have been deleted
 	vec.Reset()
 
 	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
@@ -253,6 +256,9 @@ func getProjectionEventsProcessedAfterRestart(projection []byte) float64 {
 
 func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
+
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
 		queueName := string(key)
 		vec.WithLabelValues(queueName).Set(collectFunc(value))
@@ -263,6 +269,9 @@ func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc fu
 }
 
 func collectPerQueueCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
 
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
 		queueName := string(key)
@@ -285,6 +294,9 @@ func getQueueItemsProcessed(queue []byte) float64 {
 
 func collectPerDriveGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
+
 	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
 		drive := string(key)
 		vec.WithLabelValues(drive).Set(collectFunc(value))
@@ -306,6 +318,9 @@ func getDriveAvailableBytes(drive []byte) float64 {
 
 func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
 
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
+
 	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
 		eventStreamID, _ := jp.GetString(value, "eventStreamId")
 		groupName, _ := jp.GetString(value, "groupName")
@@ -316,6 +331,9 @@ func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, col
 }
 
 func collectPerSubscriptionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+
+	// Reset before collection to ensure we remove items that have been deleted
+	vec.Reset()
 
 	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
 		eventStreamID, _ := jp.GetString(value, "eventStreamId")

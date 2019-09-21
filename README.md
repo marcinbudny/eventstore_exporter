@@ -129,6 +129,9 @@ eventstore_subscription_last_processed_event_number{event_stream_id="test-stream
 
 ## Changelog
 
+### 0.7.0
+* FIX: for items of variable count (queues, drives, projections, subscriptions, members) the exporter should not return items that have been removed (see #7)
+
 ### 0.6.0
 * FEATURE: add HTTP Basic auth to support EventStore 5.0.2+ (see #6)
 * FIX: when status code of http call does not indicate success, the exporter will now log a message and it won't report metrics
