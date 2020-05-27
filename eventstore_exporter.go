@@ -16,9 +16,10 @@ import (
 var (
 	log = logrus.New()
 
-	timeout time.Duration
-	port    uint
-	verbose bool
+	timeout            time.Duration
+	port               uint
+	verbose            bool
+	insecureSkipVerify bool
 
 	eventStoreURL      string
 	eventStoreUser     string
@@ -55,6 +56,7 @@ func readAndValidateConfig() {
 	flag.DurationVar(&timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	flag.StringVar(&clusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
+	flag.BoolVar(&insecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
 
 	flag.Parse()
 
@@ -67,12 +69,13 @@ func readAndValidateConfig() {
 	}
 
 	log.WithFields(logrus.Fields{
-		"eventStoreURL":  eventStoreURL,
-		"eventStoreUser": eventStoreUser,
-		"port":           port,
-		"timeout":        timeout,
-		"verbose":        verbose,
-		"clusterMode":    clusterMode,
+		"eventStoreURL":      eventStoreURL,
+		"eventStoreUser":     eventStoreUser,
+		"port":               port,
+		"timeout":            timeout,
+		"verbose":            verbose,
+		"clusterMode":        clusterMode,
+		"insecureSkipVerify": insecureSkipVerify,
 	}).Infof("EventStore exporter configured")
 }
 
