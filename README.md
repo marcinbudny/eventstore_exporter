@@ -33,6 +33,7 @@ The exporter can be configured with commandline arguments, environment variables
 |--port|PORT|9448|Port to expose scrape endpoint on|
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
 |--verbose|VERBOSE|false|Enable verbose logging|
+|--insecure-skip-verify|INSECURE_SKIP_VERIFY|false|Skip TLS certificatte verification for EventStore HTTP client|
 
 ## Grafana dashboard
 

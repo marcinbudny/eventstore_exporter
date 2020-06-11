@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,8 +12,18 @@ var (
 )
 
 func initializeClient() {
-	client = http.Client{
-		Timeout: timeout,
+	if insecureSkipVerify {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client = http.Client{
+			Timeout:   timeout,
+			Transport: tr,
+		}
+	} else {
+		client = http.Client{
+			Timeout: timeout,
+		}
 	}
 }
 
