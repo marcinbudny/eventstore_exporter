@@ -3,7 +3,7 @@ version: "3"
 services:
 
   eventstore1:
-   image: eventstore/eventstore:release-5.0.2
+   image: eventstore/eventstore:release-5.0.8
    env_file:
      - common-variables.env
    environment:
@@ -22,7 +22,7 @@ services:
        ipv4_address: 172.16.0.11
        
   eventstore2:
-   image: eventstore/eventstore:release-5.0.2
+   image: eventstore/eventstore:release-5.0.8
    env_file:
      - common-variables.env
    environment:
@@ -41,7 +41,7 @@ services:
        ipv4_address: 172.16.0.12
    
   eventstore3:
-   image: eventstore/eventstore:release-5.0.2
+   image: eventstore/eventstore:release-5.0.8
    env_file:
      - common-variables.env
    environment:
@@ -60,7 +60,7 @@ services:
        ipv4_address: 172.16.0.13
 
   eventstore4:
-   image: eventstore/eventstore:release-5.0.2
+   image: eventstore/eventstore:release-5.0.8
    env_file:
      - common-variables.env
    environment:
@@ -79,7 +79,7 @@ services:
        ipv4_address: 172.16.0.14
 
   prometheus:
-    image: prom/prometheus:v2.4.3
+    image: prom/prometheus:v2.19.0
     command:
     - --storage.tsdb.path=/prometheus
     - --storage.tsdb.retention=30d
@@ -92,16 +92,24 @@ services:
     - 9090:9090
 
   grafana:
-    image: grafana/grafana:5.4.3
+    image: grafana/grafana:7.0.3
     depends_on:
     - prometheus
     environment:
     - GF_AUTH_ANONYMOUS_ENABLED=true
-    - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
     - grafana-volume:/var/lib/grafana
     ports:
     - 3000:3000
+
+  grafana-init:
+    image: alpine:3.12
+    depends_on: 
+    - grafana
+    volumes:
+      - ./init:/root/init/
+    command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
 
 
 networks:

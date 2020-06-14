@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+
+  eventstore:
+   image: eventstore/eventstore:20.6.0-buster-slim
+   environment:
+     - EVENTSTORE_DEV=True
+     - EVENTSTORE_RUN_PROJECTIONS=All
+     - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
+     - EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS=True
+   ports:
+     - 1113:1113
+     - 2113:2113
+   restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.19.0
+    command:
+    - --storage.tsdb.path=/prometheus
+    - --storage.tsdb.retention=30d
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --web.enable-lifecycle
+    - --web.enable-admin-api
+    volumes:
+    - ./prometheus-config:/etc/prometheus/
+    ports:
+    - 9090:9090
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+    - prometheus
+    environment:
+    - GF_AUTH_ANONYMOUS_ENABLED=true
+    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+    - grafana-volume:/var/lib/grafana
+    ports:
+    - 3000:3000
+
+  grafana-init:
+    image: alpine:3.12
+    depends_on: 
+    - grafana
+    volumes:
+      - ./init:/root/init/
+    command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
+
+
+volumes:
+  grafana-volume:

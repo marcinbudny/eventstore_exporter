@@ -1,0 +1,34 @@
+GET https://localhost:2113/stats
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2113/version
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2113/projections/all-non-transient
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2133/info
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2113/subscriptions
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET httpss://localhost:2113/gossip
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2113/streams/%24persistentsubscription-test-stream::group1-parked
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Accept: application/json
+
