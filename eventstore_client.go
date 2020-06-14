@@ -41,10 +41,10 @@ type stats struct {
 }
 
 func getStats() (*stats, error) {
-	serverStatsChan := get("/stats")
-	projectionStatsChan := get("/projections/all-non-transient")
-	infoChan := get("/info")
-	subscriptionsStatsChan := get("/subscriptions")
+	serverStatsChan := get("/stats", false)
+	projectionStatsChan := get("/projections/all-non-transient", true)
+	infoChan := get("/info", false)
+	subscriptionsStatsChan := get("/subscriptions", false)
 
 	serverStatsResult := <-serverStatsChan
 	if serverStatsResult.err != nil {
@@ -68,7 +68,7 @@ func getStats() (*stats, error) {
 
 	gossipStatsResult := getResult{}
 	if isInClusterMode() {
-		gossipStatsChan := get("/gossip")
+		gossipStatsChan := get("/gossip", false)
 
 		gossipStatsResult = <-gossipStatsChan
 		if gossipStatsResult.err != nil {
@@ -85,7 +85,7 @@ func getStats() (*stats, error) {
 	}, nil
 }
 
-func get(path string) <-chan getResult {
+func get(path string, acceptNotFound bool) <-chan getResult {
 	url := eventStoreURL + path
 
 	result := make(chan getResult)
@@ -103,6 +103,10 @@ func get(path string) <-chan getResult {
 			return
 		}
 		defer response.Body.Close()
+
+		if response.StatusCode == 404 && acceptNotFound {
+			result <- getResult{nil, nil}
+		}
 
 		if response.StatusCode >= 400 {
 			result <- getResult{nil, fmt.Errorf("HTTP call to %s resulted in status code %d", url, response.StatusCode)}

@@ -7,366 +7,299 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const (
-	namespace = "eventstore"
-	subsystem = ""
-)
+type Collector struct {
+	up                 *prometheus.Desc
+	processCPU         *prometheus.Desc
+	processCPUScaled   *prometheus.Desc
+	processMemoryBytes *prometheus.Desc
+	diskIoReadBytes    *prometheus.Desc
+	diskIoWrittenBytes *prometheus.Desc
+	diskIoReadOps      *prometheus.Desc
+	diskIoWriteOps     *prometheus.Desc
+	uptimeSeconds      *prometheus.Desc
+	tcpSentBytes       *prometheus.Desc
+	tcpReceivedBytes   *prometheus.Desc
+	tcpConnections     *prometheus.Desc
 
-type exporter struct {
-	up                 prometheus.Gauge
-	processCPU         prometheus.Gauge
-	processCPUScaled   prometheus.Gauge
-	processMemoryBytes prometheus.Gauge
-	diskIoReadBytes    prometheus.Counter
-	diskIoWrittenBytes prometheus.Counter
-	diskIoReadOps      prometheus.Counter
-	diskIoWriteOps     prometheus.Counter
-	uptimeSeconds      prometheus.Counter
-	tcpSentBytes       prometheus.Counter
-	tcpReceivedBytes   prometheus.Counter
-	tcpConnections     prometheus.Gauge
+	queueLength         *prometheus.Desc
+	queueItemsProcessed *prometheus.Desc
 
-	queueLength         *prometheus.GaugeVec
-	queueItemsProcessed *prometheus.CounterVec
+	driveTotalBytes     *prometheus.Desc
+	driveAvailableBytes *prometheus.Desc
 
-	driveTotalBytes     *prometheus.GaugeVec
-	driveAvailableBytes *prometheus.GaugeVec
+	projectionRunning                     *prometheus.Desc
+	projectionProgress                    *prometheus.Desc
+	projectionEventsProcessedAfterRestart *prometheus.Desc
 
-	projectionRunning                     *prometheus.GaugeVec
-	projectionProgress                    *prometheus.GaugeVec
-	projectionEventsProcessedAfterRestart *prometheus.CounterVec
+	clusterMemberAlive             *prometheus.Desc
+	clusterMemberIsMaster          *prometheus.Desc
+	clusterMemberIsSlave           *prometheus.Desc
+	clusterMemberIsClone           *prometheus.Desc
+	clusterMemberIsLeader          *prometheus.Desc
+	clusterMemberIsFollower        *prometheus.Desc
+	clusterMemberIsReadonlyReplica *prometheus.Desc
 
-	clusterMemberAlive    *prometheus.GaugeVec
-	clusterMemberIsMaster prometheus.Gauge
-	clusterMemberIsSlave  prometheus.Gauge
-	clusterMemberIsClone  prometheus.Gauge
-
-	subscriptionTotalItemsProcessed      *prometheus.CounterVec
-	subscriptionLastProcessedEventNumber *prometheus.GaugeVec
-	subscriptionLastKnownEventNumber     *prometheus.GaugeVec
-	subscriptionConnectionCount          *prometheus.GaugeVec
-	subscriptionTotalInFlightMessages    *prometheus.GaugeVec
+	subscriptionTotalItemsProcessed      *prometheus.Desc
+	subscriptionLastProcessedEventNumber *prometheus.Desc
+	subscriptionLastKnownEventNumber     *prometheus.Desc
+	subscriptionConnectionCount          *prometheus.Desc
+	subscriptionTotalInFlightMessages    *prometheus.Desc
 }
 
-func newExporter() *exporter {
-	return &exporter{
-		up:                 createGauge("up", "Whether the EventStore scrape was successful"),
-		processCPU:         createGauge("process_cpu", "Process CPU usage, 0 - number of cores"),
-		processCPUScaled:   createGauge("process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores"),
-		processMemoryBytes: createGauge("process_memory_bytes", "Process memory usage, as reported by EventStore"),
-		diskIoReadBytes:    createCounter("disk_io_read_bytes", "Total number of disk IO read bytes"),
-		diskIoWrittenBytes: createCounter("disk_io_written_bytes", "Total number of disk IO written bytes"),
-		diskIoReadOps:      createCounter("disk_io_read_ops", "Total number of disk IO read operations"),
-		diskIoWriteOps:     createCounter("disk_io_write_ops", "Total number of disk IO write operations"),
-		uptimeSeconds:      createCounter("uptime_seconds", "Total uptime seconds"),
-		tcpSentBytes:       createCounter("tcp_sent_bytes", "TCP sent bytes"),
-		tcpReceivedBytes:   createCounter("tcp_received_bytes", "TCP received bytes"),
-		tcpConnections:     createGauge("tcp_connections", "Current number of TCP connections"),
+func NewCollector() *Collector {
+	return &Collector{
+		up:                 prometheus.NewDesc("eventstore_up", "Whether the EventStore scrape was successful", nil, nil),
+		processCPU:         prometheus.NewDesc("eventstore_process_cpu", "Process CPU usage, 0 - number of cores", nil, nil),
+		processCPUScaled:   prometheus.NewDesc("eventstore_process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores (available only on versions < 20.6)", nil, nil),
+		processMemoryBytes: prometheus.NewDesc("eventstore_process_memory_bytes", "Process memory usage, as reported by EventStore", nil, nil),
+		diskIoReadBytes:    prometheus.NewDesc("eventstore_disk_io_read_bytes", "Total number of disk IO read bytes", nil, nil),
+		diskIoWrittenBytes: prometheus.NewDesc("eventstore_disk_io_written_bytes", "Total number of disk IO written bytes", nil, nil),
+		diskIoReadOps:      prometheus.NewDesc("eventstore_disk_io_read_ops", "Total number of disk IO read operations", nil, nil),
+		diskIoWriteOps:     prometheus.NewDesc("eventstore_disk_io_write_ops", "Total number of disk IO write operations", nil, nil),
+		uptimeSeconds:      prometheus.NewDesc("eventstore_uptime_seconds", "Total uptime seconds", nil, nil),
+		tcpSentBytes:       prometheus.NewDesc("eventstore_tcp_sent_bytes", "TCP sent bytes", nil, nil),
+		tcpReceivedBytes:   prometheus.NewDesc("eventstore_tcp_received_bytes", "TCP received bytes", nil, nil),
+		tcpConnections:     prometheus.NewDesc("eventstore_tcp_connections", "Current number of TCP connections", nil, nil),
 
-		queueLength:         createItemGaugeVec("queue_length", "Queue length", []string{"queue"}),
-		queueItemsProcessed: createItemCounterVec("queue_items_processed_total", "Total number items processed by queue", []string{"queue"}),
+		queueLength:         prometheus.NewDesc("eventstore_queue_length", "Queue length", []string{"queue"}, nil),
+		queueItemsProcessed: prometheus.NewDesc("eventstore_queue_items_processed_total", "Total number items processed by queue", []string{"queue"}, nil),
 
-		driveTotalBytes:     createItemGaugeVec("drive_total_bytes", "Drive total size in bytes", []string{"drive"}),
-		driveAvailableBytes: createItemGaugeVec("drive_available_bytes", "Drive available bytes", []string{"drive"}),
+		driveTotalBytes:     prometheus.NewDesc("eventstore_drive_total_bytes", "Drive total size in bytes", []string{"drive"}, nil),
+		driveAvailableBytes: prometheus.NewDesc("eventstore_drive_available_bytes", "Drive available bytes", []string{"drive"}, nil),
 
-		projectionRunning:                     createItemGaugeVec("projection_running", "If 1, projection is in 'Running' state", []string{"projection"}),
-		projectionProgress:                    createItemGaugeVec("projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", []string{"projection"}),
-		projectionEventsProcessedAfterRestart: createItemCounterVec("projection_events_processed_after_restart_total", "Projection event processed count", []string{"projection"}),
+		projectionRunning:                     prometheus.NewDesc("eventstore_projection_running", "If 1, projection is in 'Running' state", []string{"projection"}, nil),
+		projectionProgress:                    prometheus.NewDesc("eventstore_projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", []string{"projection"}, nil),
+		projectionEventsProcessedAfterRestart: prometheus.NewDesc("eventstore_projection_events_processed_after_restart_total", "Projection event processed count after restart", []string{"projection"}, nil),
 
-		clusterMemberAlive:    createItemGaugeVec("cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", []string{"member"}),
-		clusterMemberIsMaster: createGauge("cluster_member_is_master", "If 1, current cluster member is the master"),
-		clusterMemberIsSlave:  createGauge("cluster_member_is_slave", "If 1, current cluster member is a slave"),
-		clusterMemberIsClone:  createGauge("cluster_member_is_clone", "If 1, current cluster member is a clone"),
+		clusterMemberAlive:             prometheus.NewDesc("eventstore_cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", []string{"member"}, nil),
+		clusterMemberIsMaster:          prometheus.NewDesc("eventstore_cluster_member_is_master", "If 1, current cluster member is the master (only versions < 20.6)", nil, nil),
+		clusterMemberIsSlave:           prometheus.NewDesc("eventstore_cluster_member_is_slave", "If 1, current cluster member is a slave (only versions < 20.6)", nil, nil),
+		clusterMemberIsClone:           prometheus.NewDesc("eventstore_cluster_member_is_clone", "If 1, current cluster member is a clone", nil, nil),
+		clusterMemberIsLeader:          prometheus.NewDesc("eventstore_cluster_member_is_leader", "If 1, current cluster member is the leader (only versions >= 20.6)", nil, nil),
+		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower (only versions >= 20.6)", nil, nil),
+		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica (only versions >= 20.6)", nil, nil),
 
-		subscriptionTotalItemsProcessed:      createItemCounterVec("subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}),
-		subscriptionLastProcessedEventNumber: createItemGaugeVec("subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}),
-		subscriptionLastKnownEventNumber:     createItemGaugeVec("subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}),
-		subscriptionConnectionCount:          createItemGaugeVec("subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}),
-		subscriptionTotalInFlightMessages:    createItemGaugeVec("subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}),
+		subscriptionTotalItemsProcessed:      prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastProcessedEventNumber: prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastKnownEventNumber:     prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionConnectionCount:          prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalInFlightMessages:    prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
 	}
 }
 
-func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
-	ch <- e.up.Desc()
-	ch <- e.processCPU.Desc()
-	ch <- e.processMemoryBytes.Desc()
-	ch <- e.diskIoReadBytes.Desc()
-	ch <- e.diskIoWrittenBytes.Desc()
-	ch <- e.diskIoReadOps.Desc()
-	ch <- e.diskIoWriteOps.Desc()
-	ch <- e.uptimeSeconds.Desc()
-	ch <- e.tcpSentBytes.Desc()
-	ch <- e.tcpReceivedBytes.Desc()
-	ch <- e.tcpConnections.Desc()
+func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.up
+	ch <- c.processCPU
+	ch <- c.processCPUScaled
+	ch <- c.processMemoryBytes
+	ch <- c.diskIoReadBytes
+	ch <- c.diskIoWrittenBytes
+	ch <- c.diskIoReadOps
+	ch <- c.diskIoWriteOps
+	ch <- c.uptimeSeconds
+	ch <- c.tcpSentBytes
+	ch <- c.tcpReceivedBytes
+	ch <- c.tcpConnections
 
-	e.queueLength.Describe(ch)
-	e.queueItemsProcessed.Describe(ch)
-	e.driveTotalBytes.Describe(ch)
-	e.driveAvailableBytes.Describe(ch)
-	e.projectionRunning.Describe(ch)
-	e.projectionProgress.Describe(ch)
-	e.projectionEventsProcessedAfterRestart.Describe(ch)
+	ch <- c.queueLength
+	ch <- c.queueItemsProcessed
+
+	ch <- c.driveTotalBytes
+	ch <- c.driveAvailableBytes
+
+	ch <- c.projectionRunning
+	ch <- c.projectionProgress
+	ch <- c.projectionEventsProcessedAfterRestart
 
 	if isInClusterMode() {
-		e.clusterMemberAlive.Describe(ch)
-
-		ch <- e.clusterMemberIsMaster.Desc()
-		ch <- e.clusterMemberIsSlave.Desc()
-		ch <- e.clusterMemberIsClone.Desc()
+		ch <- c.clusterMemberAlive
+		ch <- c.clusterMemberIsMaster
+		ch <- c.clusterMemberIsSlave
+		ch <- c.clusterMemberIsClone
+		ch <- c.clusterMemberIsLeader
+		ch <- c.clusterMemberIsFollower
+		ch <- c.clusterMemberIsReadonlyReplica
 	}
+
+	ch <- c.subscriptionTotalItemsProcessed
+	ch <- c.subscriptionLastProcessedEventNumber
+	ch <- c.subscriptionLastKnownEventNumber
+	ch <- c.subscriptionConnectionCount
+	ch <- c.subscriptionTotalInFlightMessages
 }
 
-func (e *exporter) Collect(ch chan<- prometheus.Metric) {
+func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Running scrape")
 
 	if stats, err := getStats(); err != nil {
 		log.WithError(err).Error("Error while getting data from EventStore")
 
-		e.up.Set(0)
-		ch <- e.up
+		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
 	} else {
-		e.up.Set(1)
-		ch <- e.up
+		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
 
-		e.processCPU.Set(getProcessCPU(stats))
-		ch <- e.processCPU
+		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, getProcessCPU(stats))
+		ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
+		ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, getProcessMemory(stats))
+		ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, getDiskIoReadBytes(stats))
+		ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, getDiskIoWrittenBytes(stats))
+		ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, getDiskIoReadOps(stats))
+		ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, getDiskIoWriteOps(stats))
+		ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, getTCPSentBytes(stats))
+		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, getTCPReceivedBytes(stats))
+		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, getTCPConnections(stats))
 
-		e.processCPUScaled.Set(getProcessCPUScaled(stats))
-		ch <- e.processCPUScaled
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsMaster, prometheus.GaugeValue, getIs("master", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsSlave, prometheus.GaugeValue, getIs("slave", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, getIs("clone", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
 
-		e.processMemoryBytes.Set(getProcessMemory(stats))
-		ch <- e.processMemoryBytes
+		collectPerQueueMetric(stats, c.queueLength, getQueueLength, ch)
+		collectPerQueueMetric(stats, c.queueItemsProcessed, getQueueItemsProcessed, ch)
 
-		e.diskIoReadBytes.Set(getDiskIoReadBytes(stats))
-		ch <- e.diskIoReadBytes
+		collectPerDriveMetric(stats, c.driveTotalBytes, getDriveTotalBytes, ch)
+		collectPerDriveMetric(stats, c.driveAvailableBytes, getDriveAvailableBytes, ch)
 
-		e.diskIoWrittenBytes.Set(getDiskIoWrittenBytes(stats))
-		ch <- e.diskIoWrittenBytes
+		collectPerProjectionMetric(stats, c.projectionRunning, getProjectionIsRunning, ch)
+		collectPerProjectionMetric(stats, c.projectionProgress, getProjectionProgress, ch)
+		collectPerProjectionMetric(stats, c.projectionEventsProcessedAfterRestart, getProjectionEventsProcessedAfterRestart, ch)
 
-		e.diskIoReadOps.Set(getDiskIoReadOps(stats))
-		ch <- e.diskIoReadOps
+		collectPerSubscriptionMetric(stats, c.subscriptionTotalItemsProcessed, getSubscriptionTotalItemsProcessed, ch)
+		collectPerSubscriptionMetric(stats, c.subscriptionConnectionCount, getSubscriptionConnectionCount, ch)
+		collectPerSubscriptionMetric(stats, c.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
+		collectPerSubscriptionMetric(stats, c.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
+		collectPerSubscriptionMetric(stats, c.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
 
-		e.diskIoWriteOps.Set(getDiskIoWriteOps(stats))
-		ch <- e.diskIoWriteOps
-
-		e.tcpConnections.Set(getTCPConnections(stats))
-		ch <- e.tcpConnections
-
-		e.tcpReceivedBytes.Set(getTCPReceivedBytes(stats))
-		ch <- e.tcpReceivedBytes
-
-		e.tcpSentBytes.Set(getTCPSentBytes(stats))
-		ch <- e.tcpSentBytes
-
-		e.clusterMemberIsMaster.Set(getIsMaster(stats))
-		ch <- e.clusterMemberIsMaster
-
-		e.clusterMemberIsSlave.Set(getIsSlave(stats))
-		ch <- e.clusterMemberIsSlave
-
-		e.clusterMemberIsClone.Set(getIsClone(stats))
-		ch <- e.clusterMemberIsClone
-
-		collectPerQueueGauge(stats, e.queueLength, getQueueLength, ch)
-		collectPerQueueCounter(stats, e.queueItemsProcessed, getQueueItemsProcessed, ch)
-
-		collectPerDriveGauge(stats, e.driveTotalBytes, getDriveTotalBytes, ch)
-		collectPerDriveGauge(stats, e.driveAvailableBytes, getDriveAvailableBytes, ch)
-
-		collectPerProjectionGauge(stats, e.projectionRunning, getProjectionIsRunning, ch)
-		collectPerProjectionGauge(stats, e.projectionProgress, getProjectionProgress, ch)
-		collectPerProjectionCounter(stats, e.projectionEventsProcessedAfterRestart, getProjectionEventsProcessedAfterRestart, ch)
-
-		collectPerMemberGauge(stats, e.clusterMemberAlive, getMemberIsAlive, ch)
-
-		collectPerSubscriptionCounter(stats, e.subscriptionTotalItemsProcessed, getSubscriptionTotalItemsProcessed, ch)
-		collectPerSubscriptionGauge(stats, e.subscriptionConnectionCount, getSubscriptionConnectionCount, ch)
-		collectPerSubscriptionGauge(stats, e.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
-		collectPerSubscriptionGauge(stats, e.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
-		collectPerSubscriptionGauge(stats, e.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
+		if isInClusterMode() {
+			collectPerMemberMetric(stats, c.clusterMemberAlive, getMemberIsAlive, ch)
+		}
 	}
 }
 
-func collectPerMemberGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
+func collectPerMemberMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
 
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ArrayEach(stats.gossipStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		externalHTTPIp, _ := jp.GetString(value, "externalHttpIp")
-		externalHTTPPort, _ := jp.GetInt(value, "externalHttpPort")
-		memberName := fmt.Sprintf("%s:%d", externalHTTPIp, externalHTTPPort)
-		vec.WithLabelValues(memberName).Set(collectFunc(value))
+	jp.ArrayEach(stats.gossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+		ip, _ := jp.GetString(jsonValue, "externalHttpIp")
+		port, _ := jp.GetInt(jsonValue, "externalHttpPort")
+		if ip == "" || port == 0 {
+			// it's probably ES version 20.6
+			ip, _ = jp.GetString(jsonValue, "httpEndPointIp")
+			port, _ = jp.GetInt(jsonValue, "httpEndPointPort")
+		}
+		memberName := fmt.Sprintf("%s:%d", ip, port)
+		valueType, value := collectFunc(jsonValue)
+		ch <- prometheus.MustNewConstMetric(desc, valueType, value, memberName)
 	}, "members")
 
-	vec.Collect(ch)
 }
 
-func getMemberIsAlive(member []byte) float64 {
+func getMemberIsAlive(member []byte) (prometheus.ValueType, float64) {
 	alive, _ := jp.GetBoolean(member, "isAlive")
 	if alive {
-		return 1
+		return prometheus.GaugeValue, 1
 	}
-	return 0
+	return prometheus.GaugeValue, 0
 }
 
-func collectPerProjectionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		projectionName, _ := jp.GetString(value, "effectiveName")
-		vec.WithLabelValues(projectionName).Set(collectFunc(value))
+func collectPerProjectionMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ArrayEach(stats.projectionStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+		projectionName, _ := jp.GetString(jsonValue, "effectiveName")
+		valueType, value := collectFunc(jsonValue)
+		ch <- prometheus.MustNewConstMetric(desc, valueType, value, projectionName)
 	}, "projections")
-
-	vec.Collect(ch)
 }
 
-func collectPerProjectionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ArrayEach(stats.projectionStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		projectionName, _ := jp.GetString(value, "effectiveName")
-		vec.WithLabelValues(projectionName).Set(collectFunc(value))
-	}, "projections")
-
-	vec.Collect(ch)
-}
-
-func getProjectionIsRunning(projection []byte) float64 {
+func getProjectionIsRunning(projection []byte) (prometheus.ValueType, float64) {
 	status, _ := jp.GetString(projection, "status")
 	if status == "Running" {
-		return 1
+		return prometheus.GaugeValue, 1
 	}
-	return 0
+	return prometheus.GaugeValue, 0
 }
 
-func getProjectionProgress(projection []byte) float64 {
+func getProjectionProgress(projection []byte) (prometheus.ValueType, float64) {
 	progress, _ := jp.GetFloat(projection, "progress")
-	return progress / 100.0 // scale to 0-1
+	return prometheus.GaugeValue, progress / 100.0 // scale to 0-1
 }
 
-func getProjectionEventsProcessedAfterRestart(projection []byte) float64 {
+func getProjectionEventsProcessedAfterRestart(projection []byte) (prometheus.ValueType, float64) {
 	processed, _ := jp.GetFloat(projection, "eventsProcessedAfterRestart")
-	return processed
+	return prometheus.CounterValue, processed
 }
 
-func collectPerQueueGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
+func collectPerQueueMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ObjectEach(stats.serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		queueName := string(key)
-		vec.WithLabelValues(queueName).Set(collectFunc(value))
+		valueType, value := collectFunc(jsonValue)
+		ch <- prometheus.MustNewConstMetric(desc, valueType, value, queueName)
 		return nil
 	}, "es", "queue")
-
-	vec.Collect(ch)
 }
 
-func collectPerQueueCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
-		queueName := string(key)
-		vec.WithLabelValues(queueName).Set(collectFunc(value))
-		return nil
-	}, "es", "queue")
-
-	vec.Collect(ch)
-}
-
-func getQueueLength(queue []byte) float64 {
+func getQueueLength(queue []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(queue, "length")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func getQueueItemsProcessed(queue []byte) float64 {
+func getQueueItemsProcessed(queue []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(queue, "totalItemsProcessed")
-	return value
+	return prometheus.CounterValue, value
 }
 
-func collectPerDriveGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ObjectEach(stats.serverStats, func(key []byte, value []byte, dataType jp.ValueType, offset int) error {
+func collectPerDriveMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ObjectEach(stats.serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		drive := string(key)
-		vec.WithLabelValues(drive).Set(collectFunc(value))
+		valueType, value := collectFunc(jsonValue)
+		ch <- prometheus.MustNewConstMetric(desc, valueType, value, drive)
 		return nil
 	}, "sys", "drive")
 
-	vec.Collect(ch)
 }
 
-func getDriveTotalBytes(drive []byte) float64 {
+func getDriveTotalBytes(drive []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(drive, "totalBytes")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func getDriveAvailableBytes(drive []byte) float64 {
+func getDriveAvailableBytes(drive []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(drive, "availableBytes")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func collectPerSubscriptionCounter(stats *stats, vec *prometheus.CounterVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		eventStreamID, _ := jp.GetString(value, "eventStreamId")
-		groupName, _ := jp.GetString(value, "groupName")
-		vec.WithLabelValues(eventStreamID, groupName).Set(collectFunc(value))
+func collectPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ArrayEach(stats.subscriptionsStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
+		groupName, _ := jp.GetString(jsonValue, "groupName")
+		valueType, value := collectFunc(jsonValue)
+		ch <- prometheus.MustNewConstMetric(desc, valueType, value, eventStreamID, groupName)
 	})
-
-	vec.Collect(ch)
 }
 
-func collectPerSubscriptionGauge(stats *stats, vec *prometheus.GaugeVec, collectFunc func([]byte) float64, ch chan<- prometheus.Metric) {
-
-	// Reset before collection to ensure we remove items that have been deleted
-	vec.Reset()
-
-	jp.ArrayEach(stats.subscriptionsStats, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		eventStreamID, _ := jp.GetString(value, "eventStreamId")
-		groupName, _ := jp.GetString(value, "groupName")
-		vec.WithLabelValues(eventStreamID, groupName).Set(collectFunc(value))
-	})
-
-	vec.Collect(ch)
-}
-
-func getSubscriptionTotalItemsProcessed(subscription []byte) float64 {
+func getSubscriptionTotalItemsProcessed(subscription []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(subscription, "totalItemsProcessed")
-	return value
+	return prometheus.CounterValue, value
 }
 
-func getSubscriptionConnectionCount(subscription []byte) float64 {
+func getSubscriptionConnectionCount(subscription []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(subscription, "connectionCount")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func getSubscriptionLastProcessedEventNumber(subscription []byte) float64 {
+func getSubscriptionLastProcessedEventNumber(subscription []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(subscription, "lastProcessedEventNumber")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func getSubscriptionLastKnownEventNumber(subscription []byte) float64 {
+func getSubscriptionLastKnownEventNumber(subscription []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(subscription, "lastKnownEventNumber")
-	return value
+	return prometheus.GaugeValue, value
 }
 
-func getSubscriptionTotalInFlightMessages(subscription []byte) float64 {
+func getSubscriptionTotalInFlightMessages(subscription []byte) (prometheus.ValueType, float64) {
 	value, _ := jp.GetFloat(subscription, "totalInFlightMessages")
-	return value
+	return prometheus.GaugeValue, value
 }
 
 func getProcessCPU(stats *stats) float64 {
@@ -419,60 +352,12 @@ func getTCPConnections(stats *stats) float64 {
 	return value
 }
 
-func getIsMaster(stats *stats) float64 {
-	return getIs("master", stats)
-}
-
-func getIsSlave(stats *stats) float64 {
-	return getIs("slave", stats)
-}
-
-func getIsClone(stats *stats) float64 {
-	return getIs("clone", stats)
-}
-
 func getIs(status string, stats *stats) float64 {
 	value, _ := jp.GetString(stats.info, "state")
 	if value == status {
 		return 1
 	}
 	return 0
-}
-
-func createGauge(name string, help string) prometheus.Gauge {
-	return prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Name:      name,
-		Help:      help,
-	})
-}
-
-func createItemGaugeVec(name string, help string, itemLabels []string) *prometheus.GaugeVec {
-	return prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Name:      name,
-		Help:      help,
-	}, itemLabels)
-}
-
-func createCounter(name string, help string) prometheus.Counter {
-	return prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Name:      name,
-		Help:      help,
-	})
-}
-
-func createItemCounterVec(name string, help string, itemLabels []string) *prometheus.CounterVec {
-	return prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Name:      name,
-		Help:      help,
-	}, itemLabels)
 }
 
 func isInClusterMode() bool {

@@ -43,7 +43,7 @@ func serveLandingPage() {
 }
 
 func serveMetrics() {
-	prometheus.MustRegister(newExporter())
+	prometheus.MustRegister(NewCollector())
 
 	http.Handle("/metrics", promhttp.Handler())
 }
