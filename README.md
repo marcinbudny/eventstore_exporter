@@ -11,13 +11,23 @@ You need to have a Go 1.14+ environment configured.
 go get github.com/marcinbudny/eventstore_exporter
 cd $GOPATH/src/github.com/marcinbudny/eventstore_exporter 
 go build -o eventstore_exporter
-./eventstore_exporter --eventstore-url=https://localhost:2113 --insecure-skip-verify
+./eventstore_exporter \
+    --eventstore-url=https://localhost:2113 \
+    --eventstore-user=admin \
+    --eventstore-password=changeit \
+    --cluster-mode=single \
+    --insecure-skip-verify
 ```
 
 ### Using Docker
 
 ```bash
-docker run -d -p 9448:9448 -e EVENTSTORE_URL=https://my-eventstore:2113 -e CLUSTER_MODE=single marcinbudny/eventstore_exporter
+docker run -d -p 9448:9448 \
+    -e EVENTSTORE_URL=https://my-eventstore:2113 \
+    -e CLUSTER_MODE=single \
+    -e EVENTSTORE_USER=admin \
+    -e EVENTSTORE_PASSWORD=changeit \
+    marcinbudny/eventstore_exporter
 ```
 
 ## Configuration
