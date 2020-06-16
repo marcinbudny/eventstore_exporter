@@ -20,6 +20,7 @@ services:
         ipv4_address: 172.16.1.11
     volumes:
     - ./certs:/certs
+    restart: unless-stopped
        
   eventstore2:
     image: eventstore/eventstore:20.6.0-buster-slim
@@ -39,6 +40,7 @@ services:
         ipv4_address: 172.16.1.12
     volumes:
     - ./certs:/certs
+    restart: unless-stopped
        
   eventstore3:
     image: eventstore/eventstore:20.6.0-buster-slim
@@ -58,6 +60,7 @@ services:
         ipv4_address: 172.16.1.13
     volumes:
       - ./certs:/certs
+    restart: unless-stopped
 
   eventstore4:
     image: eventstore/eventstore:20.6.0-buster-slim
@@ -77,6 +80,7 @@ services:
         ipv4_address: 172.16.1.14
     volumes:
     - ./certs:/certs
+    restart: unless-stopped
 
   eventstore-ro-replica:
     image: eventstore/eventstore:20.6.0-buster-slim
@@ -97,7 +101,8 @@ services:
         ipv4_address: 172.16.1.15
     volumes:
     - ./certs:/certs
-    
+    restart: unless-stopped
+  
   prometheus:
     image: prom/prometheus:v2.19.0
     command:
