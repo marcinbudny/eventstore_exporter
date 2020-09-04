@@ -150,6 +150,9 @@ eventstore_up 1
 
 ## Changelog
 
+### 0.8.1
+* FIX: in some cases /stats endpoint scrape will fail due to missing Accept header - see #13
+
 ### 0.8.0
 * FEATURE: support for ES 20.6 - see #12
 * FEATURE: option to ignore invalid certificates on HTTPS connection - see #11

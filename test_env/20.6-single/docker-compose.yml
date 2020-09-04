@@ -22,7 +22,7 @@ services:
     - --web.enable-lifecycle
     - --web.enable-admin-api
     volumes:
-    - ./prometheus-config:/etc/prometheus/
+    - ../common/prometheus-config:/etc/prometheus/
     ports:
     - 9090:9090
 
@@ -43,7 +43,7 @@ services:
     depends_on: 
     - grafana
     volumes:
-      - ./init:/root/init/
+      - ../common/init:/root/init/
     command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
 
 
