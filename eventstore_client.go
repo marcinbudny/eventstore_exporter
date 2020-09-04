@@ -97,6 +97,7 @@ func get(path string, acceptNotFound bool) <-chan getResult {
 		if eventStoreUser != "" && eventStorePassword != "" {
 			req.SetBasicAuth(eventStoreUser, eventStorePassword)
 		}
+		req.Header.Add("Accept", "application/json")
 		response, err := client.Do(req)
 		if err != nil {
 			result <- getResult{nil, err}
