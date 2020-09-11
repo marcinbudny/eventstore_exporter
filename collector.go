@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/buger/jsonparser"
 	jp "github.com/buger/jsonparser"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Collector struct
 type Collector struct {
 	up                 *prometheus.Desc
 	processCPU         *prometheus.Desc
@@ -39,13 +43,15 @@ type Collector struct {
 	clusterMemberIsFollower        *prometheus.Desc
 	clusterMemberIsReadonlyReplica *prometheus.Desc
 
-	subscriptionTotalItemsProcessed      *prometheus.Desc
-	subscriptionLastProcessedEventNumber *prometheus.Desc
-	subscriptionLastKnownEventNumber     *prometheus.Desc
-	subscriptionConnectionCount          *prometheus.Desc
-	subscriptionTotalInFlightMessages    *prometheus.Desc
+	subscriptionTotalItemsProcessed         *prometheus.Desc
+	subscriptionLastProcessedEventNumber    *prometheus.Desc
+	subscriptionLastKnownEventNumber        *prometheus.Desc
+	subscriptionConnectionCount             *prometheus.Desc
+	subscriptionTotalInFlightMessages       *prometheus.Desc
+	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
 }
 
+// NewCollector function
 func NewCollector() *Collector {
 	return &Collector{
 		up:                 prometheus.NewDesc("eventstore_up", "Whether the EventStore scrape was successful", nil, nil),
@@ -79,14 +85,16 @@ func NewCollector() *Collector {
 		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower (only versions >= 20.6)", nil, nil),
 		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica (only versions >= 20.6)", nil, nil),
 
-		subscriptionTotalItemsProcessed:      prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastProcessedEventNumber: prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastKnownEventNumber:     prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionConnectionCount:          prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionTotalInFlightMessages:    prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalItemsProcessed:         prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastProcessedEventNumber:    prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastKnownEventNumber:        prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionConnectionCount:             prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name", "oldest_message"}, nil),
 	}
 }
 
+// Describe function
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.up
 	ch <- c.processCPU
@@ -126,8 +134,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.subscriptionLastKnownEventNumber
 	ch <- c.subscriptionConnectionCount
 	ch <- c.subscriptionTotalInFlightMessages
+	ch <- c.subscriptionTotalNumberOfParkedMessages
 }
 
+// Collect function
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Running scrape")
 
@@ -171,6 +181,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		collectPerSubscriptionMetric(stats, c.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
+		collectParkedMessagesPerSubscriptionMetric(stats, c.subscriptionTotalNumberOfParkedMessages, ch)
 
 		if isInClusterMode() {
 			collectPerMemberMetric(stats, c.clusterMemberAlive, getMemberIsAlive, ch)
@@ -274,6 +285,47 @@ func collectPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, collectFu
 		groupName, _ := jp.GetString(jsonValue, "groupName")
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, eventStreamID, groupName)
+	})
+}
+
+func collectParkedMessagesPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
+	jp.ArrayEach(stats.subscriptionsStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
+		groupName, _ := jp.GetString(jsonValue, "groupName")
+
+		// get parked messages max event number
+		parkedMessagesURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/head/backward/1", eventStreamID, groupName)
+		log.Info(parkedMessagesURL)
+		parkedMessagesResult := get(parkedMessagesURL, false)
+		eTagString, _ := jp.GetString((<-parkedMessagesResult).result, "eTag")
+		lastEventNumber, lastEventNumberErr := strconv.ParseInt(strings.Split(eTagString, ";")[0], 10, 64)
+		if lastEventNumberErr == nil {
+			lastEventNumber++ // +1 because Ids start from 0
+			log.Info(lastEventNumber)
+		}
+
+		// get $tb (truncate before) value from metadata
+		metadataURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/metadata", eventStreamID, groupName)
+		log.Info(metadataURL)
+		metadataResultChan := get(metadataURL, false)
+		metadataResult := <-metadataResultChan
+		tbValue, _ := jp.GetInt(metadataResult.result, "$tb")
+		log.Info("$tb Value: " + fmt.Sprint(tbValue))
+		totalNumberOfParkedMessages := float64(lastEventNumber - tbValue)
+		log.Info("Total number of parked messages:" + fmt.Sprint(totalNumberOfParkedMessages))
+
+		// get oldest message in the queue
+		getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, fmt.Sprint(lastEventNumber-int64(totalNumberOfParkedMessages)))
+		getOldestMessageResultChan := get(getOldestMessageURL, false)
+		getOldestMessageResult := <-getOldestMessageResultChan
+		oldestMessageUpdatedDate := ""
+		jsonparser.ArrayEach(getOldestMessageResult.result, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			oldestMessageUpdatedDate, _ = jp.GetString(value, "updated")
+		}, "entries")
+		log.Info("Oldest Message Date: " + oldestMessageUpdatedDate)
+
+		// add metric
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, totalNumberOfParkedMessages, eventStreamID, groupName, oldestMessageUpdatedDate)
 	})
 }
 
