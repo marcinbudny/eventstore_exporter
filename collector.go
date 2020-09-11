@@ -311,11 +311,11 @@ func collectParkedMessagesPerSubscriptionMetric(stats *stats, desc *prometheus.D
 		metadataResult := <-metadataResultChan
 		tbValue, _ := jp.GetInt(metadataResult.result, "$tb")
 		log.Info("$tb Value: " + fmt.Sprint(tbValue))
-		totalNumberOfParkedMessages := float64(lastEventNumber - tbValue)
+		totalNumberOfParkedMessages := lastEventNumber - tbValue
 		log.Info("Total number of parked messages:" + fmt.Sprint(totalNumberOfParkedMessages))
 
 		// get oldest message in the queue
-		getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, fmt.Sprint(lastEventNumber-int64(totalNumberOfParkedMessages)))
+		getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, fmt.Sprint(lastEventNumber-totalNumberOfParkedMessages))
 		getOldestMessageResultChan := get(getOldestMessageURL, false)
 		getOldestMessageResult := <-getOldestMessageResultChan
 		oldestMessageUpdatedDate := ""
@@ -325,7 +325,7 @@ func collectParkedMessagesPerSubscriptionMetric(stats *stats, desc *prometheus.D
 		log.Info("Oldest Message Date: " + oldestMessageUpdatedDate)
 
 		// add metric
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, totalNumberOfParkedMessages, eventStreamID, groupName, oldestMessageUpdatedDate)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(totalNumberOfParkedMessages), eventStreamID, groupName, oldestMessageUpdatedDate)
 	})
 }
 
