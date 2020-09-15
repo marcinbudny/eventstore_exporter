@@ -16,7 +16,8 @@ go build -o eventstore_exporter
     --eventstore-user=admin \
     --eventstore-password=changeit \
     --cluster-mode=single \
-    --insecure-skip-verify
+    --insecure-skip-verify \
+    --enable-parked-messages-stats
 ```
 
 ### Using Docker
@@ -44,6 +45,7 @@ The exporter can be configured with commandline arguments, environment variables
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
 |--verbose|VERBOSE|false|Enable verbose logging|
 |--insecure-skip-verify|INSECURE_SKIP_VERIFY|false|Skip TLS certificatte verification for EventStore HTTP client|
+|--enable-parked-messages-stats|ENABLE_PARKED_MESSAGES_STATS|false|Enable parked messages stats scraping|
 
 ## Grafana dashboard
 
