@@ -141,16 +141,14 @@ func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessages
 		totalNumberOfParkedMessages := lastEventNumber - truncateBeforeValue
 
 		var oldestParkedMessage float64
-		if true {
-			oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
-			oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
-			if err != nil {
-				log.WithFields(logrus.Fields{
-					"eventStreamId": eventStreamID,
-					"groupName":     groupName,
-					"error":         err,
-				}).Warn("Error while getting oldest parked message.")
-			}
+		oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
+		oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"eventStreamId": eventStreamID,
+				"groupName":     groupName,
+				"error":         err,
+			}).Warn("Error while getting oldest parked message.")
 		}
 
 		result = append(result, parkedMessagesStats{
