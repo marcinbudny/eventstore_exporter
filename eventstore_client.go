@@ -124,8 +124,8 @@ func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessages
 			log.WithFields(logrus.Fields{
 				"eventStreamId": eventStreamID,
 				"groupName":     groupName,
-				"err":           err,
-			}).Warn("Error while getting parked messages last event number.")
+			}).Warn(err)
+			return
 		}
 
 		truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(eventStreamID, groupName, lastEventNumber)
@@ -134,21 +134,23 @@ func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessages
 			log.WithFields(logrus.Fields{
 				"eventStreamId": eventStreamID,
 				"groupName":     groupName,
-				"error":         err,
-			}).Warn("Error while getting parked messages truncate before value.")
+			}).Warn(err)
+			return
 		}
 
 		totalNumberOfParkedMessages := lastEventNumber - truncateBeforeValue
 
-		var oldestParkedMessage float64
-		oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
-		oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"eventStreamId": eventStreamID,
-				"groupName":     groupName,
-				"error":         err,
-			}).Warn("Error while getting oldest parked message.")
+		var oldestParkedMessage float64 = 0
+		if totalNumberOfParkedMessages > 0 {
+			oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
+			oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"eventStreamId": eventStreamID,
+					"groupName":     groupName,
+					"error":         err,
+				}).Warn("Error while getting oldest parked message.")
+			}
 		}
 
 		result = append(result, parkedMessagesStats{
@@ -164,9 +166,11 @@ func getOldestParkedMessageTimeInSeconds(eventStreamID string, groupName string,
 	getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, strconv.FormatInt(oldestMessageID, 10))
 	getOldestMessageResultChan := get(getOldestMessageURL, false)
 	getOldestMessageResult := <-getOldestMessageResultChan
+
 	if getOldestMessageResult.err != nil {
 		return 0, getOldestMessageResult.err
 	}
+
 	oldestMessageUpdatedDateResult := ""
 	jsonparser.ArrayEach(getOldestMessageResult.result, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		oldestMessageUpdatedDateResult, _ = jp.GetString(value, "updated")
@@ -219,7 +223,12 @@ func getParkedMessagesTruncateBeforeValue(eventStreamID string, groupName string
 	truncateBeforeValue, err := jp.GetInt(metadataResult.result, "$tb")
 
 	if err != nil {
-		return 0, err
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         err,
+		}).Warn("Parked messages have not been replayed yet, as $tb value does not exist in the metadata. Defaulting to 0.")
+		return 0, nil
 	}
 
 	return truncateBeforeValue, nil

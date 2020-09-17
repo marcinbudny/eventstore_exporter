@@ -89,7 +89,7 @@ func NewCollector() *Collector {
 		subscriptionConnectionCount:             prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_parked_messages_oldest_message", "Oldest parked message in subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
 	}
 }
 
@@ -134,6 +134,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.subscriptionConnectionCount
 	ch <- c.subscriptionTotalInFlightMessages
 	ch <- c.subscriptionTotalNumberOfParkedMessages
+	ch <- c.subscriptionOldestParkedMessage
 }
 
 // Collect function
