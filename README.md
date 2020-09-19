@@ -136,6 +136,12 @@ eventstore_subscription_last_processed_event_number{event_stream_id="test-stream
 # HELP eventstore_subscription_messages_in_flight Number of messages in flight for subscription
 # TYPE eventstore_subscription_messages_in_flight gauge
 eventstore_subscription_messages_in_flight{event_stream_id="test-stream",group_name="group1"} 0
+# HELP eventstore_subscription_oldest_parked_message_age_seconds Oldest parked message age for subscription in seconds
+# TYPE eventstore_subscription_oldest_parked_message_age_seconds gauge
+eventstore_subscription_oldest_parked_message_age_seconds{event_stream_id="test-stream",group_name="group1"} 33
+# HELP eventstore_subscription_parked_messages Number of parked messages for subscription
+# TYPE eventstore_subscription_parked_messages gauge
+eventstore_subscription_parked_messages{event_stream_id="test-stream",group_name="group1"} 1
 # HELP eventstore_tcp_connections Current number of TCP connections
 # TYPE eventstore_tcp_connections gauge
 eventstore_tcp_connections 1
