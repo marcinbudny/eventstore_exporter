@@ -158,6 +158,9 @@ eventstore_up 1
 
 ## Changelog
 
+### 0.9.0
+* FEATURE: parked message metrics (note: enable them with `--enable-parked-messages-stats` flag)
+
 ### 0.8.1
 * FIX: in some cases /stats endpoint scrape will fail due to missing Accept header - see #13
 
