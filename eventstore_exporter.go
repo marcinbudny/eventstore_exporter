@@ -21,10 +21,11 @@ var (
 	verbose            bool
 	insecureSkipVerify bool
 
-	eventStoreURL      string
-	eventStoreUser     string
-	eventStorePassword string
-	clusterMode        string
+	eventStoreURL             string
+	eventStoreUser            string
+	eventStorePassword        string
+	clusterMode               string
+	enableParkedMessagesStats bool
 )
 
 func serveLandingPage() {
@@ -57,6 +58,7 @@ func readAndValidateConfig() {
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	flag.StringVar(&clusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
 	flag.BoolVar(&insecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
+	flag.BoolVar(&enableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
 
 	flag.Parse()
 
@@ -69,13 +71,14 @@ func readAndValidateConfig() {
 	}
 
 	log.WithFields(logrus.Fields{
-		"eventStoreURL":      eventStoreURL,
-		"eventStoreUser":     eventStoreUser,
-		"port":               port,
-		"timeout":            timeout,
-		"verbose":            verbose,
-		"clusterMode":        clusterMode,
-		"insecureSkipVerify": insecureSkipVerify,
+		"eventStoreURL":             eventStoreURL,
+		"eventStoreUser":            eventStoreUser,
+		"port":                      port,
+		"timeout":                   timeout,
+		"verbose":                   verbose,
+		"clusterMode":               clusterMode,
+		"insecureSkipVerify":        insecureSkipVerify,
+		"enableParkedMessagesStats": enableParkedMessagesStats,
 	}).Infof("EventStore exporter configured")
 }
 

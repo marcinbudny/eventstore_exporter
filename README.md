@@ -16,7 +16,8 @@ go build -o eventstore_exporter
     --eventstore-user=admin \
     --eventstore-password=changeit \
     --cluster-mode=single \
-    --insecure-skip-verify
+    --insecure-skip-verify \
+    --enable-parked-messages-stats
 ```
 
 ### Using Docker
@@ -44,6 +45,7 @@ The exporter can be configured with commandline arguments, environment variables
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
 |--verbose|VERBOSE|false|Enable verbose logging|
 |--insecure-skip-verify|INSECURE_SKIP_VERIFY|false|Skip TLS certificatte verification for EventStore HTTP client|
+|--enable-parked-messages-stats|ENABLE_PARKED_MESSAGES_STATS|false|Enable parked messages stats scraping|
 
 ## Grafana dashboard
 
@@ -134,6 +136,12 @@ eventstore_subscription_last_processed_event_number{event_stream_id="test-stream
 # HELP eventstore_subscription_messages_in_flight Number of messages in flight for subscription
 # TYPE eventstore_subscription_messages_in_flight gauge
 eventstore_subscription_messages_in_flight{event_stream_id="test-stream",group_name="group1"} 0
+# HELP eventstore_subscription_oldest_parked_message_age_seconds Oldest parked message age for subscription in seconds
+# TYPE eventstore_subscription_oldest_parked_message_age_seconds gauge
+eventstore_subscription_oldest_parked_message_age_seconds{event_stream_id="test-stream",group_name="group1"} 33
+# HELP eventstore_subscription_parked_messages Number of parked messages for subscription
+# TYPE eventstore_subscription_parked_messages gauge
+eventstore_subscription_parked_messages{event_stream_id="test-stream",group_name="group1"} 1
 # HELP eventstore_tcp_connections Current number of TCP connections
 # TYPE eventstore_tcp_connections gauge
 eventstore_tcp_connections 1

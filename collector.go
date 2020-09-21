@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Collector struct
 type Collector struct {
 	up                 *prometheus.Desc
 	processCPU         *prometheus.Desc
@@ -39,13 +40,16 @@ type Collector struct {
 	clusterMemberIsFollower        *prometheus.Desc
 	clusterMemberIsReadonlyReplica *prometheus.Desc
 
-	subscriptionTotalItemsProcessed      *prometheus.Desc
-	subscriptionLastProcessedEventNumber *prometheus.Desc
-	subscriptionLastKnownEventNumber     *prometheus.Desc
-	subscriptionConnectionCount          *prometheus.Desc
-	subscriptionTotalInFlightMessages    *prometheus.Desc
+	subscriptionTotalItemsProcessed         *prometheus.Desc
+	subscriptionLastProcessedEventNumber    *prometheus.Desc
+	subscriptionLastKnownEventNumber        *prometheus.Desc
+	subscriptionConnectionCount             *prometheus.Desc
+	subscriptionTotalInFlightMessages       *prometheus.Desc
+	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
+	subscriptionOldestParkedMessage         *prometheus.Desc
 }
 
+// NewCollector function
 func NewCollector() *Collector {
 	return &Collector{
 		up:                 prometheus.NewDesc("eventstore_up", "Whether the EventStore scrape was successful", nil, nil),
@@ -79,14 +83,17 @@ func NewCollector() *Collector {
 		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower (only versions >= 20.6)", nil, nil),
 		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica (only versions >= 20.6)", nil, nil),
 
-		subscriptionTotalItemsProcessed:      prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastProcessedEventNumber: prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastKnownEventNumber:     prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionConnectionCount:          prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionTotalInFlightMessages:    prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalItemsProcessed:         prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastProcessedEventNumber:    prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastKnownEventNumber:        prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionConnectionCount:             prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
 	}
 }
 
+// Describe function
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.up
 	ch <- c.processCPU
@@ -126,8 +133,11 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.subscriptionLastKnownEventNumber
 	ch <- c.subscriptionConnectionCount
 	ch <- c.subscriptionTotalInFlightMessages
+	ch <- c.subscriptionTotalNumberOfParkedMessages
+	ch <- c.subscriptionOldestParkedMessage
 }
 
+// Collect function
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Running scrape")
 
@@ -171,6 +181,8 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		collectPerSubscriptionMetric(stats, c.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
+		collectParkedMessagesPerSubscriptionMetric(stats.parkedMessagesStats, c.subscriptionTotalNumberOfParkedMessages, ch)
+		collectOldestParkedMessagePerSubscriptionMetric(stats.parkedMessagesStats, c.subscriptionOldestParkedMessage, ch)
 
 		if isInClusterMode() {
 			collectPerMemberMetric(stats, c.clusterMemberAlive, getMemberIsAlive, ch)
@@ -275,6 +287,18 @@ func collectPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, collectFu
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, eventStreamID, groupName)
 	})
+}
+
+func collectParkedMessagesPerSubscriptionMetric(stats []parkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
+	for _, stat := range stats {
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.totalNumberOfParkedMessages, stat.eventStreamID, stat.groupName)
+	}
+}
+
+func collectOldestParkedMessagePerSubscriptionMetric(stats []parkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
+	for _, stat := range stats {
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.oldestParkedMessageAgeInSeconds, stat.eventStreamID, stat.groupName)
+	}
 }
 
 func getSubscriptionTotalItemsProcessed(subscription []byte) (prometheus.ValueType, float64) {

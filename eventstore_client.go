@@ -5,6 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/buger/jsonparser"
+	jp "github.com/buger/jsonparser"
 )
 
 var (
@@ -33,11 +41,19 @@ type getResult struct {
 }
 
 type stats struct {
-	serverStats        []byte
-	gossipStats        []byte
-	projectionStats    []byte
-	info               []byte
-	subscriptionsStats []byte
+	serverStats         []byte
+	gossipStats         []byte
+	projectionStats     []byte
+	info                []byte
+	subscriptionsStats  []byte
+	parkedMessagesStats []parkedMessagesStats
+}
+
+type parkedMessagesStats struct {
+	eventStreamID                   string
+	groupName                       string
+	totalNumberOfParkedMessages     float64
+	oldestParkedMessageAgeInSeconds float64
 }
 
 func getStats() (*stats, error) {
@@ -76,13 +92,159 @@ func getStats() (*stats, error) {
 		}
 	}
 
+	var parkedMessagesStatsResult []parkedMessagesStats
+	if enableParkedMessagesStats {
+		parkedMessagesStats, err := getSubscriptionParkedMessagesStats(subscriptionsStatsResult.result)
+		if err != nil {
+			log.WithError(err).Error("Error while getting parked messages for subscriptions.")
+		} else {
+			parkedMessagesStatsResult = *parkedMessagesStats
+		}
+	}
+
 	return &stats{
 		serverStatsResult.result,
 		gossipStatsResult.result,
 		projectionStatsResult.result,
 		infoResult.result,
 		subscriptionsStatsResult.result,
+		parkedMessagesStatsResult,
 	}, nil
+}
+
+func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessagesStats, error) {
+	var result []parkedMessagesStats
+	jp.ArrayEach(subscriptions, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
+		groupName, _ := jp.GetString(jsonValue, "groupName")
+
+		lastEventNumber, err := getParkedMessagesLastEventNumber(eventStreamID, groupName)
+
+		if err != nil || lastEventNumber == 0 {
+			return
+		}
+
+		truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(eventStreamID, groupName, lastEventNumber)
+
+		if err != nil {
+			return
+		}
+
+		totalNumberOfParkedMessages := lastEventNumber - truncateBeforeValue
+
+		var oldestParkedMessage float64 = 0
+		if totalNumberOfParkedMessages > 0 {
+			oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
+			oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
+		}
+
+		result = append(result, parkedMessagesStats{
+			eventStreamID:                   eventStreamID,
+			groupName:                       groupName,
+			totalNumberOfParkedMessages:     float64(totalNumberOfParkedMessages),
+			oldestParkedMessageAgeInSeconds: oldestParkedMessage})
+	})
+	return &result, nil
+}
+
+func getOldestParkedMessageTimeInSeconds(eventStreamID string, groupName string, oldestMessageID int64) (float64, error) {
+	getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, strconv.FormatInt(oldestMessageID, 10))
+	getOldestMessageResultChan := get(getOldestMessageURL, false)
+	getOldestMessageResult := <-getOldestMessageResultChan
+
+	if getOldestMessageResult.err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         getOldestMessageResult.err,
+		}).Error("Error while getting oldest parked message.")
+		return 0, getOldestMessageResult.err
+	}
+
+	oldestMessageUpdatedDateResult := ""
+	jsonparser.ArrayEach(getOldestMessageResult.result, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		oldestMessageUpdatedDateResult, _ = jp.GetString(value, "updated")
+	}, "entries")
+
+	loc, _ := time.LoadLocation("UTC")
+	timeNow := time.Now().In(loc)
+	oldestMessageUpdatedDate, err := time.Parse(time.RFC3339Nano, oldestMessageUpdatedDateResult)
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         err,
+		}).Error("Cannot parse update time on the oldest parked message.")
+		return 0, err
+	}
+
+	timeInSeconds := float64(timeNow.Sub(oldestMessageUpdatedDate) / time.Second)
+
+	return timeInSeconds, nil
+}
+
+func getParkedMessagesLastEventNumber(eventStreamID string, groupName string) (int64, error) {
+	parkedMessagesURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/head/backward/1", eventStreamID, groupName)
+	parkedMessagesResultChan := get(parkedMessagesURL, true)
+	parkedMessagesResult := <-parkedMessagesResultChan
+
+	if parkedMessagesResult.err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         parkedMessagesResult.err,
+		}).Error("Error when getting parked messages stream.")
+		return 0, parkedMessagesResult.err
+	}
+
+	if parkedMessagesResult.result == nil {
+		return 0, nil
+	}
+
+	eTagString, _ := jp.GetString(parkedMessagesResult.result, "eTag")
+
+	lastEventNumber, err := strconv.ParseInt(strings.Split(eTagString, ";")[0], 10, 64)
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         err,
+		}).Error("Cannot parse eTag on parked messages stream.")
+		return 0, err
+	}
+
+	lastEventNumber++ // +1 because Ids start from 0
+
+	return lastEventNumber, nil
+}
+
+func getParkedMessagesTruncateBeforeValue(eventStreamID string, groupName string, lastEventNumber int64) (int64, error) {
+	metadataURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/metadata", eventStreamID, groupName)
+	metadataResultChan := get(metadataURL, false)
+	metadataResult := <-metadataResultChan
+
+	if metadataResult.err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+			"error":         metadataResult.err,
+		}).Error("Error when getting parked message stream metadata")
+		return 0, metadataResult.err
+	}
+
+	truncateBeforeValue, err := jp.GetInt(metadataResult.result, "$tb")
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+		}).Debug("Parked messages have not been replayed yet, as $tb value does not exist in the metadata. Defaulting to 0.")
+		return 0, nil
+	}
+
+	return truncateBeforeValue, nil
 }
 
 func get(path string, acceptNotFound bool) <-chan getResult {
