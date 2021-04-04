@@ -1,0 +1,13 @@
+{
+  "esVersion": "21.2.0.0",
+  "state": "clone",
+  "features": {
+    "projections": true,
+    "userManagement": true,
+    "atomPub": false
+  },
+  "authentication": {
+    "type": "internal",
+    "properties": null
+  }
+}

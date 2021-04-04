@@ -3,11 +3,6 @@ Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
 ###
 
-GET https://localhost:2113/version
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
-
-###
-
 GET https://localhost:2113/projections/all-non-transient
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
@@ -24,6 +19,11 @@ Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 ###
 
 GET https://localhost:2113/gossip
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+
+###
+
+GET https://localhost:2113/subscriptions/test-stream/group1/info
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
 ###

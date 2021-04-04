@@ -1,0 +1,10 @@
+{
+    "$tb": 134,
+    "$acl": {
+      "$r": "$admins",
+      "$w": "$admins",
+      "$d": "$admins",
+      "$mr": "$admins",
+      "$mw": "$admins"
+    }
+  }
