@@ -3,14 +3,13 @@ version: "3"
 services:
 
   eventstore1:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_NODE_PRIORITY=3
       - EVENTSTORE_INT_IP=172.16.1.11
-      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_EXT_HTTP_PORT=2113
       - EVENTSTORE_EXT_TCP_PORT=1113
     ports:
       - 1113:1113
@@ -23,14 +22,13 @@ services:
     restart: unless-stopped
        
   eventstore2:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_NODE_PRIORITY=2
       - EVENTSTORE_INT_IP=172.16.1.12    
-      - EVENTSTORE_HTTP_PORT=2123
+      - EVENTSTORE_EXT_HTTP_PORT=2123
       - EVENTSTORE_EXT_TCP_PORT=1123
     ports:
       - 1123:1123
@@ -43,14 +41,13 @@ services:
     restart: unless-stopped
        
   eventstore3:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.14:2143
-      - EVENTSTORE_NODE_PRIORITY=1
       - EVENTSTORE_INT_IP=172.16.1.13
-      - EVENTSTORE_HTTP_PORT=2133
+      - EVENTSTORE_EXT_HTTP_PORT=2133
       - EVENTSTORE_EXT_TCP_PORT=1133
     ports:
       - 1133:1133
@@ -63,14 +60,13 @@ services:
     restart: unless-stopped
 
   eventstore4:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133
-      - EVENTSTORE_NODE_PRIORITY=1
       - EVENTSTORE_INT_IP=172.16.1.14
-      - EVENTSTORE_HTTP_PORT=2143
+      - EVENTSTORE_EXT_HTTP_PORT=2143
       - EVENTSTORE_EXT_TCP_PORT=1143
     ports:
       - 1143:1143
@@ -83,14 +79,13 @@ services:
     restart: unless-stopped
 
   eventstore-ro-replica:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_NODE_PRIORITY=1
       - EVENTSTORE_INT_IP=172.16.1.15
-      - EVENTSTORE_HTTP_PORT=2153
+      - EVENTSTORE_EXT_HTTP_PORT=2153
       - EVENTSTORE_EXT_TCP_PORT=1153
       - EVENTSTORE_READ_ONLY_REPLICA=True
     ports:

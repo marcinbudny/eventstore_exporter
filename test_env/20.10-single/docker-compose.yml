@@ -3,11 +3,10 @@ version: "3"
 services:
 
   eventstore:
-   image: eventstore/eventstore:20.6.0-buster-slim
+   image: eventstore/eventstore:20.10.2-buster-slim
    environment:
-     - EVENTSTORE_DEV=True
      - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
-     - EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS=True
+     - EVENTSTORE_INSECURE=True
    ports:
      - 1113:1113
      - 2113:2113
@@ -39,7 +38,7 @@ services:
     - 3000:3000
 
   grafana-init:
-    image: alpine:3.12
+    image: alpine:3.13
     depends_on: 
     - grafana
     volumes:
