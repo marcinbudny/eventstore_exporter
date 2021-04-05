@@ -159,12 +159,15 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, getTCPReceivedBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, getTCPConnections(stats))
 
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsMaster, prometheus.GaugeValue, getIs("master", stats))
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsSlave, prometheus.GaugeValue, getIs("slave", stats))
+		if isAtLeastVersion(stats.esVersion, "20.6.0.0") {
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
+		} else {
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsMaster, prometheus.GaugeValue, getIs("master", stats))
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsSlave, prometheus.GaugeValue, getIs("slave", stats))
+		}
 		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, getIs("clone", stats))
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
 
 		collectPerQueueMetric(stats, c.queueLength, getQueueLength, ch)
 		collectPerQueueMetric(stats, c.queueItemsProcessed, getQueueItemsProcessed, ch)
@@ -192,14 +195,21 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 func collectPerMemberMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
 
+	is206Plus := isAtLeastVersion(stats.esVersion, "20.6.0.0")
+
 	jp.ArrayEach(stats.gossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
-		ip, _ := jp.GetString(jsonValue, "externalHttpIp")
-		port, _ := jp.GetInt(jsonValue, "externalHttpPort")
-		if ip == "" || port == 0 {
-			// it's probably ES version 20.6
+		ip := ""
+		port := int64(0)
+		if is206Plus {
 			ip, _ = jp.GetString(jsonValue, "httpEndPointIp")
 			port, _ = jp.GetInt(jsonValue, "httpEndPointPort")
+
+		} else {
+			ip, _ = jp.GetString(jsonValue, "externalHttpIp")
+			port, _ = jp.GetInt(jsonValue, "externalHttpPort")
+
 		}
+
 		memberName := fmt.Sprintf("%s:%d", ip, port)
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, memberName)

@@ -9,7 +9,7 @@ services:
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.11
-      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_HTTP_PORT=2113
       - EVENTSTORE_EXT_TCP_PORT=1113
     ports:
       - 1113:1113
@@ -28,7 +28,7 @@ services:
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.12    
-      - EVENTSTORE_EXT_HTTP_PORT=2123
+      - EVENTSTORE_HTTP_PORT=2123
       - EVENTSTORE_EXT_TCP_PORT=1123
     ports:
       - 1123:1123
@@ -47,7 +47,7 @@ services:
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.13
-      - EVENTSTORE_EXT_HTTP_PORT=2133
+      - EVENTSTORE_HTTP_PORT=2133
       - EVENTSTORE_EXT_TCP_PORT=1133
     ports:
       - 1133:1133
@@ -66,7 +66,7 @@ services:
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133
       - EVENTSTORE_INT_IP=172.16.1.14
-      - EVENTSTORE_EXT_HTTP_PORT=2143
+      - EVENTSTORE_HTTP_PORT=2143
       - EVENTSTORE_EXT_TCP_PORT=1143
     ports:
       - 1143:1143
@@ -85,7 +85,7 @@ services:
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.15
-      - EVENTSTORE_EXT_HTTP_PORT=2153
+      - EVENTSTORE_HTTP_PORT=2153
       - EVENTSTORE_EXT_TCP_PORT=1153
       - EVENTSTORE_READ_ONLY_REPLICA=True
     ports:
@@ -112,7 +112,7 @@ services:
     - 9090:9090
 
   grafana:
-    image: grafana/grafana:7.0.3
+    image: grafana/grafana:7.5.2
     depends_on:
     - prometheus
     environment:

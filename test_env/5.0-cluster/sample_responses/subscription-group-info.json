@@ -1,0 +1,44 @@
+{
+    "links": [
+      {
+        "href": "http://127.0.0.1:2113/subscriptions/test-stream/group1/info",
+        "rel": "detail"
+      },
+      {
+        "href": "http://127.0.0.1:2113/subscriptions/test-stream/group1/replayParked",
+        "rel": "replayParked"
+      }
+    ],
+    "config": {
+      "resolveLinktos": false,
+      "startFrom": -1,
+      "messageTimeoutMilliseconds": 30000,
+      "extraStatistics": false,
+      "maxRetryCount": 10,
+      "liveBufferSize": 500,
+      "bufferSize": 500,
+      "readBatchSize": 1,
+      "preferRoundRobin": true,
+      "checkPointAfterMilliseconds": 2000,
+      "minCheckPointCount": 10,
+      "maxCheckPointCount": 1000,
+      "maxSubscriberCount": 0,
+      "namedConsumerStrategy": "RoundRobin"
+    },
+    "eventStreamId": "test-stream",
+    "groupName": "group1",
+    "status": "Live",
+    "averageItemsPerSecond": 0.0,
+    "parkedMessageUri": "http://127.0.0.1:2113/streams/%24persistentsubscription-test-stream::group1-parked",
+    "getMessagesUri": "http://127.0.0.1:2113/subscriptions/test-stream/group1/1",
+    "totalItemsProcessed": 27,
+    "countSinceLastMeasurement": 27,
+    "lastProcessedEventNumber": 56,
+    "lastKnownEventNumber": 56,
+    "readBufferCount": 0,
+    "liveBufferCount": 27,
+    "retryBufferCount": 0,
+    "totalInFlightMessages": 0,
+    "outstandingMessagesCount": 0,
+    "connections": []
+  }

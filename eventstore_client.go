@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
 
 	"github.com/buger/jsonparser"
@@ -41,6 +42,8 @@ type getResult struct {
 }
 
 type stats struct {
+	esVersion           string
+	atomPubEnabled      bool
 	serverStats         []byte
 	gossipStats         []byte
 	projectionStats     []byte
@@ -61,6 +64,13 @@ func getStats() (*stats, error) {
 	projectionStatsChan := get("/projections/all-non-transient", true)
 	infoChan := get("/info", false)
 	subscriptionsStatsChan := get("/subscriptions", false)
+	allStreamChan := get("/streams/$all/head/backward/1", false)
+
+	atomPubEnabled := false
+	allStreamResult := <-allStreamChan
+	if allStreamResult.err == nil {
+		atomPubEnabled = true
+	}
 
 	serverStatsResult := <-serverStatsChan
 	if serverStatsResult.err != nil {
@@ -76,6 +86,7 @@ func getStats() (*stats, error) {
 	if infoResult.err != nil {
 		return nil, infoResult.err
 	}
+	esVersion := getEsVersion(infoResult.result)
 
 	subscriptionsStatsResult := <-subscriptionsStatsChan
 	if subscriptionsStatsResult.err != nil {
@@ -94,15 +105,33 @@ func getStats() (*stats, error) {
 
 	var parkedMessagesStatsResult []parkedMessagesStats
 	if enableParkedMessagesStats {
-		parkedMessagesStats, err := getSubscriptionParkedMessagesStats(subscriptionsStatsResult.result)
-		if err != nil {
-			log.WithError(err).Error("Error while getting parked messages for subscriptions.")
+
+		if atomPubEnabled {
+			log.Debug("Detected Atom Pub to be available, getting subscription stats via Atom Pub")
+
+			parkedMessagesStats, err := getParkedMessagesStatsViaAtomPub(subscriptionsStatsResult.result)
+			if err != nil {
+				log.WithError(err).Error("Error while getting parked messages for subscriptions via Atom Pub")
+			} else {
+				parkedMessagesStatsResult = *parkedMessagesStats
+			}
+		} else if reportsParkedMessageNumber(esVersion) {
+			log.Debug("Detected Atom Pub to be unavailable, getting limited subscription stats from group info endpoint")
+			parkedMessageStats, err := getParkedMessagesStatsViaGroupInfo(subscriptionsStatsResult.result)
+			if err != nil {
+				log.WithError(err).Error("Error while getting parked messages fro subscriptions via group info endpoint")
+			} else {
+				parkedMessagesStatsResult = *parkedMessageStats
+			}
+
 		} else {
-			parkedMessagesStatsResult = *parkedMessagesStats
+			log.Error("Atom Pub is disabled and ES version is < 21.2, there is no way to retrieve subscription stats")
 		}
 	}
 
 	return &stats{
+		esVersion,
+		atomPubEnabled,
 		serverStatsResult.result,
 		gossipStatsResult.result,
 		projectionStatsResult.result,
@@ -112,9 +141,34 @@ func getStats() (*stats, error) {
 	}, nil
 }
 
-func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessagesStats, error) {
+func getEsVersion(info []byte) string {
+	value, _ := jp.GetString(info, "esVersion")
+	if value == "" {
+		value = "0.0.0.0"
+	}
+	return value
+}
+
+func reportsParkedMessageNumber(esVersionString string) bool {
+	return isAtLeastVersion(esVersionString, "21.2.0.0")
+}
+
+func isAtLeastVersion(esVersionString string, minVersion string) bool {
+	esVersion, err := version.NewVersion(esVersionString)
+	if err != nil {
+		return false
+	}
+	minSupportedVersion, err := version.NewVersion(minVersion)
+	if err != nil {
+		return false
+	}
+
+	return esVersion.GreaterThanOrEqual(minSupportedVersion)
+}
+
+func getParkedMessagesStatsViaAtomPub(subscriptions []byte) (*[]parkedMessagesStats, error) {
 	var result []parkedMessagesStats
-	jp.ArrayEach(subscriptions, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+	jp.ArrayEach(subscriptions, func(jsonValue []byte, dataType jp.ValueType, offset int, e error) {
 		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
 		groupName, _ := jp.GetString(jsonValue, "groupName")
 
@@ -135,7 +189,7 @@ func getSubscriptionParkedMessagesStats(subscriptions []byte) (*[]parkedMessages
 		var oldestParkedMessage float64 = 0
 		if totalNumberOfParkedMessages > 0 {
 			oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
-			oldestParkedMessage, err = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
+			oldestParkedMessage, _ = getOldestParkedMessageTimeInSeconds(eventStreamID, groupName, oldestMessageID)
 		}
 
 		result = append(result, parkedMessagesStats{
@@ -245,6 +299,35 @@ func getParkedMessagesTruncateBeforeValue(eventStreamID string, groupName string
 	}
 
 	return truncateBeforeValue, nil
+}
+
+func getParkedMessagesStatsViaGroupInfo(subscriptions []byte) (*[]parkedMessagesStats, error) {
+	var result []parkedMessagesStats
+	jp.ArrayEach(subscriptions, func(jsonValue []byte, dataType jp.ValueType, offset int, e error) {
+		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
+		groupName, _ := jp.GetString(jsonValue, "groupName")
+
+		groupInfoURL := fmt.Sprintf("http://127.0.0.1:2113/subscriptions/test-stream/%s/info", groupName)
+		groupInfoChan := get(groupInfoURL, false)
+		groupInfoResult := <-groupInfoChan
+
+		if groupInfoResult.err != nil {
+			log.WithFields(logrus.Fields{
+				"eventStreamId": eventStreamID,
+				"groupName":     groupName,
+				"error":         groupInfoResult.err,
+			}).Error("Error when getting subscription group info")
+		}
+
+		totalNumberOfParkedMessages, _ := jp.GetFloat(groupInfoResult.result, "parkedMessageCount")
+
+		result = append(result, parkedMessagesStats{
+			eventStreamID:                   eventStreamID,
+			groupName:                       groupName,
+			totalNumberOfParkedMessages:     totalNumberOfParkedMessages,
+			oldestParkedMessageAgeInSeconds: -1})
+	})
+	return &result, nil
 }
 
 func get(path string, acceptNotFound bool) <-chan getResult {

@@ -5,7 +5,7 @@ EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
 
 ### From source
 
-You need to have a Go 1.14+ environment configured.
+You need to have a Go 1.16+ environment configured.
 
 ```bash
 go get github.com/marcinbudny/eventstore_exporter
@@ -31,6 +31,12 @@ docker run -d -p 9448:9448 \
     marcinbudny/eventstore_exporter
 ```
 
+### Supported versions
+
+* 5.0
+* 20.10 LTS
+* 21.2
+
 ## Configuration
 
 The exporter can be configured with commandline arguments, environment variables and a configuration file. For the details on how to format the configuration file, visit [namsral/flag](https://github.com/namsral/flag) repo.
@@ -40,12 +46,12 @@ The exporter can be configured with commandline arguments, environment variables
 |--eventstore-url|EVENTSTORE_URL|http://localhost:2113|Eventstore HTTP endpoint|
 |--eventstore-user|EVENTSTORE_USER|(empty)|Eventstore user (if not specified, basic auth is not used)|
 |--eventstore-password|EVENTSTORE_PASSWORD|(empty)|Eventstore password  (if not specified, basic auth is not used)|
-|--cluster-mode|CLUSTER_MODE|cluster|Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster. This settings decides whether gossip stats endpoint is queired.|
+|--cluster-mode|CLUSTER_MODE|cluster|Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster node. This settings decides whether gossip stats endpoint is queired. **Note:** Starting with ES 21.2, the gossip endpoint responds to queries even for single node installation. So if using this version, you can ignore this setting and leave it at default value.|
 |--port|PORT|9448|Port to expose scrape endpoint on|
 |--timeout|TIMEOUT|10s|Timeout when calling EventStore|
 |--verbose|VERBOSE|false|Enable verbose logging|
 |--insecure-skip-verify|INSECURE_SKIP_VERIFY|false|Skip TLS certificatte verification for EventStore HTTP client|
-|--enable-parked-messages-stats|ENABLE_PARKED_MESSAGES_STATS|false|Enable parked messages stats scraping|
+|--enable-parked-messages-stats|ENABLE_PARKED_MESSAGES_STATS|false|Enable parked messages stats scraping. **Note:** for ES 20.10+ you need to enable Atom Pub over HTTP in EventStoreDB to get subscriptions stats. For ES 21.2+, number of parked messages can be extracted without enabling AtomPub, but not the age of the oldest message.|
 
 ## Grafana dashboard
 
@@ -157,6 +163,12 @@ eventstore_up 1
 ```
 
 ## Changelog
+
+### 0.10.0
+* BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
+* FEATURE: It is now possible to get subscription parked message count even if Atom Pub over HTTP is disabled (requires ES 21.2+)
+* FEATURE: Updated Grafana dashboard to include parked message count and oldest parked message age and also adjusted member status presentation to the breaking change - update to dashboard revision 7
+* OTHER: Docker image is now based on Go 1.16.3
 
 ### 0.9.0
 * FEATURE: parked message metrics (note: enable them with `--enable-parked-messages-stats` flag)
