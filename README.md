@@ -166,6 +166,7 @@ eventstore_up 1
 
 ### 0.10.0
 * BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
+* BREAKING: The `cpu_scaled` metric is only available for ES version 5
 * FEATURE: It is now possible to get subscription parked message count even if Atom Pub over HTTP is disabled (requires ES 21.2+)
 * FEATURE: Updated Grafana dashboard to include parked message count and oldest parked message age and also adjusted member status presentation to the breaking change - update to dashboard revision 7
 * OTHER: Docker image is now based on Go 1.16.3

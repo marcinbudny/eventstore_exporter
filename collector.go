@@ -149,7 +149,11 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
 
 		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, getProcessCPU(stats))
-		ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
+
+		if isVersionLowerThan(stats.esVersion, "20.6.0.0") {
+			ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
+		}
+
 		ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, getProcessMemory(stats))
 		ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, getDiskIoReadBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, getDiskIoWrittenBytes(stats))

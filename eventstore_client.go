@@ -166,6 +166,19 @@ func isAtLeastVersion(esVersionString string, minVersion string) bool {
 	return esVersion.GreaterThanOrEqual(minSupportedVersion)
 }
 
+func isVersionLowerThan(esVersionString string, maxVersion string) bool {
+	esVersion, err := version.NewVersion(esVersionString)
+	if err != nil {
+		return false
+	}
+	minSupportedVersion, err := version.NewVersion(maxVersion)
+	if err != nil {
+		return false
+	}
+
+	return esVersion.LessThan(minSupportedVersion)
+}
+
 func getParkedMessagesStatsViaAtomPub(subscriptions []byte) (*[]parkedMessagesStats, error) {
 	var result []parkedMessagesStats
 	jp.ArrayEach(subscriptions, func(jsonValue []byte, dataType jp.ValueType, offset int, e error) {
