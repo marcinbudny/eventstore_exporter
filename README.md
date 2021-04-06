@@ -10,7 +10,7 @@ You need to have a Go 1.16+ environment configured.
 ```bash
 go get github.com/marcinbudny/eventstore_exporter
 
-./eventstore_exporter \
+eventstore_exporter \
     --eventstore-url=https://localhost:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
