@@ -163,6 +163,9 @@ eventstore_up 1
 
 ## Changelog
 
+### 0.10.1
+* FIX: fixed memory leak occurring when calls to ESDB fail
+
 ### 0.10.0
 * BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
 * BREAKING: The `cpu_scaled` metric is only available for ES version 5

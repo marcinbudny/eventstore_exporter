@@ -346,12 +346,12 @@ func getParkedMessagesStatsViaGroupInfo(subscriptions []byte) (*[]parkedMessages
 func get(path string, acceptNotFound bool) <-chan getResult {
 	url := eventStoreURL + path
 
-	result := make(chan getResult)
+	result := make(chan getResult, 1)
 
 	go func() {
 		log.WithField("url", url).Debug("GET request to EventStore")
 
-		req, err := http.NewRequest("GET", url, nil)
+		req, _ := http.NewRequest("GET", url, nil)
 		if eventStoreUser != "" && eventStorePassword != "" {
 			req.SetBasicAuth(eventStoreUser, eventStorePassword)
 		}
@@ -365,10 +365,12 @@ func get(path string, acceptNotFound bool) <-chan getResult {
 
 		if response.StatusCode == 404 && acceptNotFound {
 			result <- getResult{nil, nil}
+			return
 		}
 
 		if response.StatusCode >= 400 {
 			result <- getResult{nil, fmt.Errorf("HTTP call to %s resulted in status code %d", url, response.StatusCode)}
+			return
 		}
 
 		buf, err := ioutil.ReadAll(response.Body)
