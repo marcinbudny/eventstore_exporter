@@ -1,14 +1,20 @@
-package main
+package collector
 
 import (
 	"fmt"
 
 	jp "github.com/buger/jsonparser"
+	"github.com/marcinbudny/eventstore_exporter/client"
+	"github.com/marcinbudny/eventstore_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Collector struct
 type Collector struct {
+	config *config.Config
+	client *client.EventStoreStatsClient
+
 	up                 *prometheus.Desc
 	processCPU         *prometheus.Desc
 	processCPUScaled   *prometheus.Desc
@@ -50,8 +56,11 @@ type Collector struct {
 }
 
 // NewCollector function
-func NewCollector() *Collector {
+func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *Collector {
 	return &Collector{
+		config: config,
+		client: client,
+
 		up:                 prometheus.NewDesc("eventstore_up", "Whether the EventStore scrape was successful", nil, nil),
 		processCPU:         prometheus.NewDesc("eventstore_process_cpu", "Process CPU usage, 0 - number of cores", nil, nil),
 		processCPUScaled:   prometheus.NewDesc("eventstore_process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores (available only on versions < 20.6)", nil, nil),
@@ -118,7 +127,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.projectionProgress
 	ch <- c.projectionEventsProcessedAfterRestart
 
-	if isInClusterMode() {
+	if c.config.IsInClusterMode() {
 		ch <- c.clusterMemberAlive
 		ch <- c.clusterMemberIsMaster
 		ch <- c.clusterMemberIsSlave
@@ -141,7 +150,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Running scrape")
 
-	if stats, err := getStats(); err != nil {
+	if stats, err := c.client.GetStats(); err != nil {
 		log.WithError(err).Error("Error while getting data from EventStore")
 
 		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
@@ -150,7 +159,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, getProcessCPU(stats))
 
-		if isVersionLowerThan(stats.esVersion, "20.6.0.0") {
+		if stats.EsVersion.IsVersionLowerThan("20.6.0.0") {
 			ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
 		}
 
@@ -163,7 +172,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, getTCPReceivedBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, getTCPConnections(stats))
 
-		if isAtLeastVersion(stats.esVersion, "20.6.0.0") {
+		if stats.EsVersion.IsAtLeastVersion("20.6.0.0") {
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
@@ -188,20 +197,20 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		collectPerSubscriptionMetric(stats, c.subscriptionLastKnownEventNumber, getSubscriptionLastKnownEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionLastProcessedEventNumber, getSubscriptionLastProcessedEventNumber, ch)
 		collectPerSubscriptionMetric(stats, c.subscriptionTotalInFlightMessages, getSubscriptionTotalInFlightMessages, ch)
-		collectParkedMessagesPerSubscriptionMetric(stats.parkedMessagesStats, c.subscriptionTotalNumberOfParkedMessages, ch)
-		collectOldestParkedMessagePerSubscriptionMetric(stats.parkedMessagesStats, c.subscriptionOldestParkedMessage, ch)
+		collectParkedMessagesPerSubscriptionMetric(stats.ParkedMessagesStats, c.subscriptionTotalNumberOfParkedMessages, ch)
+		collectOldestParkedMessagePerSubscriptionMetric(stats.ParkedMessagesStats, c.subscriptionOldestParkedMessage, ch)
 
-		if isInClusterMode() {
+		if c.config.IsInClusterMode() {
 			collectPerMemberMetric(stats, c.clusterMemberAlive, getMemberIsAlive, ch)
 		}
 	}
 }
 
-func collectPerMemberMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+func collectPerMemberMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
 
-	is206Plus := isAtLeastVersion(stats.esVersion, "20.6.0.0")
+	is206Plus := stats.EsVersion.IsAtLeastVersion("20.6.0.0")
 
-	jp.ArrayEach(stats.gossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+	jp.ArrayEach(stats.GossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		ip := ""
 		port := int64(0)
 		if is206Plus {
@@ -229,8 +238,8 @@ func getMemberIsAlive(member []byte) (prometheus.ValueType, float64) {
 	return prometheus.GaugeValue, 0
 }
 
-func collectPerProjectionMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
-	jp.ArrayEach(stats.projectionStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+func collectPerProjectionMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ArrayEach(stats.ProjectionStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		projectionName, _ := jp.GetString(jsonValue, "effectiveName")
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, projectionName)
@@ -255,8 +264,8 @@ func getProjectionEventsProcessedAfterRestart(projection []byte) (prometheus.Val
 	return prometheus.CounterValue, processed
 }
 
-func collectPerQueueMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
-	jp.ObjectEach(stats.serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
+func collectPerQueueMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ObjectEach(stats.ServerStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		queueName := string(key)
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, queueName)
@@ -274,8 +283,8 @@ func getQueueItemsProcessed(queue []byte) (prometheus.ValueType, float64) {
 	return prometheus.CounterValue, value
 }
 
-func collectPerDriveMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
-	jp.ObjectEach(stats.serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
+func collectPerDriveMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ObjectEach(stats.ServerStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		drive := string(key)
 		valueType, value := collectFunc(jsonValue)
 		ch <- prometheus.MustNewConstMetric(desc, valueType, value, drive)
@@ -294,8 +303,8 @@ func getDriveAvailableBytes(drive []byte) (prometheus.ValueType, float64) {
 	return prometheus.GaugeValue, value
 }
 
-func collectPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
-	jp.ArrayEach(stats.subscriptionsStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+func collectPerSubscriptionMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
+	jp.ArrayEach(stats.SubscriptionsStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
 		groupName, _ := jp.GetString(jsonValue, "groupName")
 		valueType, value := collectFunc(jsonValue)
@@ -303,15 +312,15 @@ func collectPerSubscriptionMetric(stats *stats, desc *prometheus.Desc, collectFu
 	})
 }
 
-func collectParkedMessagesPerSubscriptionMetric(stats []parkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
+func collectParkedMessagesPerSubscriptionMetric(stats []client.ParkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
 	for _, stat := range stats {
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.totalNumberOfParkedMessages, stat.eventStreamID, stat.groupName)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.TotalNumberOfParkedMessages, stat.EventStreamID, stat.GroupName)
 	}
 }
 
-func collectOldestParkedMessagePerSubscriptionMetric(stats []parkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
+func collectOldestParkedMessagePerSubscriptionMetric(stats []client.ParkedMessagesStats, desc *prometheus.Desc, ch chan<- prometheus.Metric) {
 	for _, stat := range stats {
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.oldestParkedMessageAgeInSeconds, stat.eventStreamID, stat.groupName)
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, stat.OldestParkedMessageAgeInSeconds, stat.EventStreamID, stat.GroupName)
 	}
 }
 
@@ -340,64 +349,60 @@ func getSubscriptionTotalInFlightMessages(subscription []byte) (prometheus.Value
 	return prometheus.GaugeValue, value
 }
 
-func getProcessCPU(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpu")
+func getProcessCPU(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "cpu")
 	return value / 100.0
 }
 
-func getProcessCPUScaled(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "cpuScaled")
+func getProcessCPUScaled(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "cpuScaled")
 	return value / 100.0
 }
 
-func getProcessMemory(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "mem")
+func getProcessMemory(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "mem")
 	return value
 }
 
-func getDiskIoReadBytes(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "diskIo", "readBytes")
+func getDiskIoReadBytes(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "diskIo", "readBytes")
 	return value
 }
 
-func getDiskIoWrittenBytes(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "diskIo", "writtenBytes")
+func getDiskIoWrittenBytes(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "diskIo", "writtenBytes")
 	return value
 }
 
-func getDiskIoReadOps(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "diskIo", "readOps")
+func getDiskIoReadOps(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "diskIo", "readOps")
 	return value
 }
 
-func getDiskIoWriteOps(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "diskIo", "writeOps")
+func getDiskIoWriteOps(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "diskIo", "writeOps")
 	return value
 }
 
-func getTCPSentBytes(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "sentBytesTotal")
+func getTCPSentBytes(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "tcp", "sentBytesTotal")
 	return value
 }
 
-func getTCPReceivedBytes(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "receivedBytesTotal")
+func getTCPReceivedBytes(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "tcp", "receivedBytesTotal")
 	return value
 }
 
-func getTCPConnections(stats *stats) float64 {
-	value, _ := jp.GetFloat(stats.serverStats, "proc", "tcp", "connections")
+func getTCPConnections(stats *client.Stats) float64 {
+	value, _ := jp.GetFloat(stats.ServerStats, "proc", "tcp", "connections")
 	return value
 }
 
-func getIs(status string, stats *stats) float64 {
-	value, _ := jp.GetString(stats.info, "state")
+func getIs(status string, stats *client.Stats) float64 {
+	value, _ := jp.GetString(stats.Info, "state")
 	if value == status {
 		return 1
 	}
 	return 0
-}
-
-func isInClusterMode() bool {
-	return clusterMode == "cluster"
 }
