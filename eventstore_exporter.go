@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -36,10 +37,15 @@ func serveMetrics(config *config.Config, client *client.EventStoreStatsClient) {
 }
 
 func readAndValidateConfig() *config.Config {
-	if config, err := config.Load(); err == nil {
+	if config, err := config.Load(os.Args[1:], false); err == nil {
+		password := config.EventStorePassword
+		if password != "" {
+			password = "**REDACTED**"
+		}
 		log.WithFields(log.Fields{
 			"eventStoreURL":             config.EventStoreURL,
 			"eventStoreUser":            config.EventStoreUser,
+			"eventStorePassword":        password,
 			"port":                      config.Port,
 			"timeout":                   config.Timeout,
 			"verbose":                   config.Verbose,

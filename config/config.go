@@ -21,27 +21,43 @@ type Config struct {
 	EnableParkedMessagesStats bool
 }
 
-func Load() (*Config, error) {
+func createFlagSet(config *Config) *flag.FlagSet {
+	fs := flag.NewFlagSet("flagset", flag.ContinueOnError)
+	fs.StringVar(&config.EventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
+	fs.StringVar(&config.EventStoreUser, "eventstore-user", "", "EventStore User")
+	fs.StringVar(&config.EventStorePassword, "eventstore-password", "", "EventStore Password")
+	fs.UintVar(&config.Port, "port", 9448, "Port to expose scraping endpoint on")
+	fs.DurationVar(&config.Timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
+	fs.BoolVar(&config.Verbose, "verbose", false, "Enable verbose logging")
+	fs.StringVar(&config.ClusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
+	fs.BoolVar(&config.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
+	fs.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
+
+	return fs
+}
+
+func Load(args []string, suppressOutput bool) (*Config, error) {
 	config := &Config{}
+	fs := createFlagSet(config)
 
-	flag.StringVar(&config.EventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
-	flag.StringVar(&config.EventStoreUser, "eventstore-user", "", "EventStore User")
-	flag.StringVar(&config.EventStorePassword, "eventstore-password", "", "EventStore Password")
-	flag.UintVar(&config.Port, "port", 9448, "Port to expose scraping endpoint on")
-	flag.DurationVar(&config.Timeout, "timeout", time.Second*10, "Timeout when calling EventStore")
-	flag.BoolVar(&config.Verbose, "verbose", false, "Enable verbose logging")
-	flag.StringVar(&config.ClusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
-	flag.BoolVar(&config.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
-	flag.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
+	if suppressOutput {
+		fs.Usage = func() {}
+	}
 
-	flag.Parse()
-
-	return config, config.validate()
+	if err := fs.Parse(args); err == nil {
+		if validationErr := config.validate(); validationErr == nil {
+			return config, nil
+		} else {
+			return nil, validationErr
+		}
+	} else {
+		return nil, err
+	}
 }
 
 func (config *Config) validate() error {
 	if config.ClusterMode != "cluster" && config.ClusterMode != "single" {
-		return fmt.Errorf("Unknown cluster mode %v, use 'cluster' or 'single'", config.ClusterMode)
+		return fmt.Errorf("unknown cluster mode %v, use 'cluster' or 'single'", config.ClusterMode)
 	}
 
 	if (config.EventStoreUser != "" && config.EventStorePassword == "") || (config.EventStoreUser == "" && config.EventStorePassword != "") {
