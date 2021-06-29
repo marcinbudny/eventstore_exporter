@@ -7,7 +7,6 @@ jobs:
       matrix:
         os:
           - ubuntu
-          - windows
 
     services:
       eventstore:
