@@ -19,6 +19,9 @@ jobs:
         # override eventstore healthcheck that does not work properly
         options: >-
           --health-cmd "sleep 5"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
 
     name: tests_os-${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
