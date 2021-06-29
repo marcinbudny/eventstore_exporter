@@ -18,7 +18,7 @@ jobs:
           EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
         # override eventstore healthcheck that does not work properly
         options: >-
-          --healthcheck-cmd "sleep 5"
+          --health-cmd "sleep 5"
 
     name: tests_os-${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
