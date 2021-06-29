@@ -1,4 +1,4 @@
-name: Build
+name: CI
 on: [push, pull_request]
 
 jobs:
@@ -8,6 +8,15 @@ jobs:
         os:
           - ubuntu
           - windows
+
+    services:
+      eventstore:
+        image: eventstore/eventstore:21.2.0-buster-slim
+        env:
+          EVENTSTORE_DEV: 'True'
+          EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
+          EVENTSTORE_INSECURE: 'True'
+          EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
 
     name: tests_os-${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
@@ -19,4 +28,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: run-tests
+        env:
+          TEST_EVENTSTORE_URL: http://eventstore:2113
         run: go test ./...

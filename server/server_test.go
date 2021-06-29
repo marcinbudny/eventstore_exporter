@@ -144,8 +144,8 @@ func prepareExporterServer(overrideEventStoreURL string) *ExporterServer {
 	eventStoreURL := "http://localhost:2113"
 	if overrideEventStoreURL != "" {
 		eventStoreURL = overrideEventStoreURL
-	} else if os.Getenv("EVENTSTORE_URL") != "" {
-		eventStoreURL = os.Getenv("EVENTSTORE_URL")
+	} else if os.Getenv("TEST_EVENTSTORE_URL") != "" {
+		eventStoreURL = os.Getenv("TEST_EVENTSTORE_URL")
 	}
 
 	config := &config.Config{

@@ -9,6 +9,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	clearEnvironment()
+
 	tests := []struct {
 		name           string
 		args           []string
@@ -124,4 +126,16 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	} else {
 		t.Errorf("unexpected error %v", err)
 	}
+}
+
+func clearEnvironment() {
+	os.Unsetenv("TIMEOUT")
+	os.Unsetenv("PORT")
+	os.Unsetenv("INSECURE_SKIP_VERIFY")
+	os.Unsetenv("VERBOSE")
+	os.Unsetenv("EVENTSTORE_URL")
+	os.Unsetenv("EVENTSTORE_USER")
+	os.Unsetenv("EVENTSTORE_PASSWORD")
+	os.Unsetenv("CLUSTER_MODE")
+	os.Unsetenv("ENABLE_PARKED_MESSAGES_STATS")
 }
