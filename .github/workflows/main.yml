@@ -16,6 +16,8 @@ jobs:
           EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
           EVENTSTORE_INSECURE: 'True'
           EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
+        options: >-
+          --no-healthcheck
 
     name: tests_os-${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
