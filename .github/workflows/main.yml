@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ubuntu-latest
     container: golang:1.16.5-buster
 
     services:
