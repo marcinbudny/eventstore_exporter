@@ -53,24 +53,24 @@ func TestBasicMetrics(t *testing.T) {
 func TestEventStoreUp(t *testing.T) {
 	tests := []struct {
 		name            string
-		eventStoreUrl   string
+		eventStoreURL   string
 		expectedUpValue float64
 	}{
 		{
 			name:            "eventstore_up should be 1 if it can connect to ES",
-			eventStoreUrl:   "",
+			eventStoreURL:   "",
 			expectedUpValue: 1,
 		},
 		{
 			name:            "eventstore_up should be 0 if it cannot connect to ES",
-			eventStoreUrl:   "http://does_not_exist",
+			eventStoreURL:   "http://does_not_exist",
 			expectedUpValue: 0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			es := prepareExporterServer(test.eventStoreUrl)
+			es := prepareExporterServer(test.eventStoreURL)
 			ts := httptest.NewServer(es.mux)
 			defer ts.Close()
 
@@ -140,16 +140,16 @@ func assertMetricValue(name string, metricType string, expectedValue float64, me
 	}
 }
 
-func prepareExporterServer(overrideEventStoreUrl string) *ExporterServer {
-	eventStoreUrl := "http://localhost:2113"
-	if overrideEventStoreUrl != "" {
-		eventStoreUrl = overrideEventStoreUrl
+func prepareExporterServer(overrideEventStoreURL string) *ExporterServer {
+	eventStoreURL := "http://localhost:2113"
+	if overrideEventStoreURL != "" {
+		eventStoreURL = overrideEventStoreURL
 	} else if os.Getenv("EVENTSTORE_URL") != "" {
-		eventStoreUrl = os.Getenv("EVENTSTORE_URL")
+		eventStoreURL = os.Getenv("EVENTSTORE_URL")
 	}
 
 	config := &config.Config{
-		EventStoreURL:      eventStoreUrl,
+		EventStoreURL:      eventStoreURL,
 		EventStoreUser:     "admin",
 		EventStorePassword: "changeit",
 		InsecureSkipVerify: true,
