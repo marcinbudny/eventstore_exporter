@@ -1,0 +1,55 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        esVersion:
+          - release-5.0.10
+          - 21.2.0-buster-slim
+          - 20.10.2-buster-slim
+
+    name: tests on ES ${{ matrix.esVersion }}
+
+    runs-on: ubuntu-latest
+    container: golang:1.16.5-buster
+
+    services:
+      eventstore:
+        image: eventstore/eventstore:${{ matrix.esVersion }}
+        env:
+          EVENTSTORE_DEV: 'True'
+          EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
+          EVENTSTORE_INSECURE: 'True'
+          EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
+        # override eventstore healthcheck that does not work properly
+        options: >-
+          --health-cmd "sleep 5"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: run-tests
+        env:
+          TEST_EVENTSTORE_URL: http://eventstore:2113
+        run: go test ./...
+
+  docker-build:
+    name: Docker image build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: docker/build-push-action@v2
+        with:
+          push: false

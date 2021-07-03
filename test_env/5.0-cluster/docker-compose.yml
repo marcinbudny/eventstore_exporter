@@ -1,116 +1,114 @@
-version: "3"
+version: '3'
 
 services:
-
   eventstore1:
-   image: eventstore/eventstore:release-5.0.8
-   env_file:
-     - common-variables.env
-   environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112
-     - EVENTSTORE_NODE_PRIORITY=3
-     - EVENTSTORE_INT_IP=172.16.0.11
-     - EVENTSTORE_EXT_HTTP_PORT=2113
-     - EVENTSTORE_EXT_TCP_PORT=1113
-     - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2113/
-   ports:
-     - 1113:1113
-     - 2113:2113
-   restart: unless-stopped
-   networks:
-     clusternetwork:
-       ipv4_address: 172.16.0.11
-       
+    image: eventstore/eventstore:release-5.0.10
+    env_file:
+      - common-variables.env
+    environment:
+      - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112
+      - EVENTSTORE_NODE_PRIORITY=3
+      - EVENTSTORE_INT_IP=172.16.0.11
+      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2113/
+    ports:
+      - 1113:1113
+      - 2113:2113
+    restart: unless-stopped
+    networks:
+      clusternetwork:
+        ipv4_address: 172.16.0.11
+
   eventstore2:
-   image: eventstore/eventstore:release-5.0.8
-   env_file:
-     - common-variables.env
-   environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112,172.16.0.14:2112
-     - EVENTSTORE_NODE_PRIORITY=2
-     - EVENTSTORE_INT_IP=172.16.0.12    
-     - EVENTSTORE_EXT_HTTP_PORT=2123
-     - EVENTSTORE_EXT_TCP_PORT=1123
-     - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2123/
-   ports:
-     - 1123:1123
-     - 2123:2123
-   restart: unless-stopped
-   networks:
-     clusternetwork:
-       ipv4_address: 172.16.0.12
-   
+    image: eventstore/eventstore:release-5.0.10
+    env_file:
+      - common-variables.env
+    environment:
+      - EVENTSTORE_GOSSIP_SEED=172.16.0.12:2112,172.16.0.13:2112,172.16.0.14:2112
+      - EVENTSTORE_NODE_PRIORITY=2
+      - EVENTSTORE_INT_IP=172.16.0.12
+      - EVENTSTORE_EXT_HTTP_PORT=2123
+      - EVENTSTORE_EXT_TCP_PORT=1123
+      - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2123/
+    ports:
+      - 1123:1123
+      - 2123:2123
+    restart: unless-stopped
+    networks:
+      clusternetwork:
+        ipv4_address: 172.16.0.12
+
   eventstore3:
-   image: eventstore/eventstore:release-5.0.8
-   env_file:
-     - common-variables.env
-   environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.13:2112,172.16.0.14:2112
-     - EVENTSTORE_NODE_PRIORITY=1
-     - EVENTSTORE_INT_IP=172.16.0.13
-     - EVENTSTORE_EXT_HTTP_PORT=2133
-     - EVENTSTORE_EXT_TCP_PORT=1133
-     - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2133/
-   ports:
-     - 1133:1133
-     - 2133:2133
-   restart: unless-stopped
-   networks:
-     clusternetwork:
-       ipv4_address: 172.16.0.13
+    image: eventstore/eventstore:release-5.0.10
+    env_file:
+      - common-variables.env
+    environment:
+      - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.13:2112,172.16.0.14:2112
+      - EVENTSTORE_NODE_PRIORITY=1
+      - EVENTSTORE_INT_IP=172.16.0.13
+      - EVENTSTORE_EXT_HTTP_PORT=2133
+      - EVENTSTORE_EXT_TCP_PORT=1133
+      - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2133/
+    ports:
+      - 1133:1133
+      - 2133:2133
+    restart: unless-stopped
+    networks:
+      clusternetwork:
+        ipv4_address: 172.16.0.13
 
   eventstore4:
-   image: eventstore/eventstore:release-5.0.8
-   env_file:
-     - common-variables.env
-   environment:
-     - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.12:2112,172.16.0.13:2112
-     - EVENTSTORE_NODE_PRIORITY=1
-     - EVENTSTORE_INT_IP=172.16.0.14
-     - EVENTSTORE_EXT_HTTP_PORT=2143
-     - EVENTSTORE_EXT_TCP_PORT=1143
-     - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2143/
-   ports:
-     - 1143:1143
-     - 2143:2143
-   restart: unless-stopped
-   networks:
-     clusternetwork:
-       ipv4_address: 172.16.0.14
+    image: eventstore/eventstore:release-5.0.10
+    env_file:
+      - common-variables.env
+    environment:
+      - EVENTSTORE_GOSSIP_SEED=172.16.0.11:2112,172.16.0.12:2112,172.16.0.13:2112
+      - EVENTSTORE_NODE_PRIORITY=1
+      - EVENTSTORE_INT_IP=172.16.0.14
+      - EVENTSTORE_EXT_HTTP_PORT=2143
+      - EVENTSTORE_EXT_TCP_PORT=1143
+      - EVENTSTORE_EXT_HTTP_PREFIXES=http://*:2143/
+    ports:
+      - 1143:1143
+      - 2143:2143
+    restart: unless-stopped
+    networks:
+      clusternetwork:
+        ipv4_address: 172.16.0.14
 
   prometheus:
     image: prom/prometheus:v2.19.0
     command:
-    - --storage.tsdb.path=/prometheus
-    - --storage.tsdb.retention=30d
-    - --config.file=/etc/prometheus/prometheus.yml
-    - --web.enable-lifecycle
-    - --web.enable-admin-api
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention=30d
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+      - --web.enable-admin-api
     volumes:
-    - ../common/prometheus-config:/etc/prometheus/
+      - ../common/prometheus-config:/etc/prometheus/
     ports:
-    - 9090:9090
+      - 9090:9090
 
   grafana:
     image: grafana/grafana:7.5.2
     depends_on:
-    - prometheus
+      - prometheus
     environment:
-    - GF_AUTH_ANONYMOUS_ENABLED=true
-    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-    - grafana-volume:/var/lib/grafana
+      - grafana-volume:/var/lib/grafana
     ports:
-    - 3000:3000
+      - 3000:3000
 
   grafana-init:
     image: alpine:3.12
-    depends_on: 
-    - grafana
+    depends_on:
+      - grafana
     volumes:
       - ../common/init:/root/init/
     command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
-
 
 networks:
   clusternetwork:
@@ -118,7 +116,7 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: 172.16.0.0/24
+        - subnet: 172.16.0.0/24
 
 volumes:
   grafana-volume:
