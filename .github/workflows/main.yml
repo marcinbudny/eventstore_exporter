@@ -43,3 +43,13 @@ jobs:
         env:
           TEST_EVENTSTORE_URL: http://eventstore:2113
         run: go test ./...
+
+  docker-build:
+    name: Docker image build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: docker/build-push-action@v2
+        with:
+          push: false
