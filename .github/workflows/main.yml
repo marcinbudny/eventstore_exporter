@@ -1,14 +1,28 @@
 name: CI
-on: [push, pull_request]
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   test:
+    strategy:
+      matrix:
+        esVersion:
+          - release-5.0.10
+          - 21.2.0-buster-slim
+          - 20.10.2-buster-slim
+
+    name: tests on ES ${{ matrix.esVersion }}
+
     runs-on: ubuntu-latest
     container: golang:1.16.5-buster
 
     services:
       eventstore:
-        image: eventstore/eventstore:21.2.0-buster-slim
+        image: eventstore/eventstore:${{ matrix.esVersion }}
         env:
           EVENTSTORE_DEV: 'True'
           EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
