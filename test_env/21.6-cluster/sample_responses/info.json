@@ -1,10 +1,10 @@
 {
-  "esVersion": "21.2.0.0",
-  "state": "clone",
+  "esVersion": "21.6.0.0",
+  "state": "follower",
   "features": {
     "projections": true,
     "userManagement": true,
-    "atomPub": false
+    "atomPub": true
   },
   "authentication": {
     "type": "internal",

@@ -8,7 +8,7 @@ Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
 ###
 
-GET http://localhost:2113/info
+GET https://localhost:2113/info
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
 ###
@@ -28,13 +28,13 @@ Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 
 ###
 
-GET http://localhost:2113/streams/$all/head/backward/1
+GET https://localhost:2113/streams/$all/head/backward/1
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 Accept: application/json
 
 ###
 
-GET http://localhost:2113/streams/test-stream
+GET https://localhost:2113/streams/test-stream
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 Accept: application/json
 
@@ -72,6 +72,12 @@ Accept: application/json
 ###
 
 GET https://localhost:2113/streams/test-stream
+Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Accept: application/json
+
+###
+
+GET https://localhost:2113/streams/test-stream/metadata
 Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
 Accept: application/json
 

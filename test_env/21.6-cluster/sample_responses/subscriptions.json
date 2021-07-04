@@ -12,9 +12,11 @@
     "getMessagesUri": "https://localhost:2113/subscriptions/test-stream/group1/1",
     "status": "Live",
     "averageItemsPerSecond": 0.0,
-    "totalItemsProcessed": 0,
-    "lastProcessedEventNumber": -1,
-    "lastKnownEventNumber": 134,
+    "totalItemsProcessed": 89,
+    "lastProcessedEventNumber": 88,
+    "lastProcessedEventPosition": "88",
+    "lastKnownEventNumber": 88,
+    "lastKnownEventPosition": "88",
     "connectionCount": 0,
     "totalInFlightMessages": 0
   }

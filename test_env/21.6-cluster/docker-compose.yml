@@ -1,9 +1,8 @@
-version: "3"
+version: '3'
 
 services:
-
   eventstore1:
-    image: eventstore/eventstore:21.2.0-buster-slim
+    image: eventstore/eventstore:21.6.0-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -11,6 +10,7 @@ services:
       - EVENTSTORE_INT_IP=172.16.1.11
       - EVENTSTORE_HTTP_PORT=2113
       - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_NODE_PRIORITY=1
     ports:
       - 1113:1113
       - 2113:2113
@@ -18,16 +18,16 @@ services:
       clusternetwork:
         ipv4_address: 172.16.1.11
     volumes:
-    - ./certs:/certs
+      - ./certs:/certs
     restart: unless-stopped
-       
+
   eventstore2:
-    image: eventstore/eventstore:21.2.0-buster-slim
+    image: eventstore/eventstore:21.6.0-buster-slim
     env_file:
       - common-variables.env
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_INT_IP=172.16.1.12    
+      - EVENTSTORE_INT_IP=172.16.1.12
       - EVENTSTORE_HTTP_PORT=2123
       - EVENTSTORE_EXT_TCP_PORT=1123
     ports:
@@ -37,11 +37,11 @@ services:
       clusternetwork:
         ipv4_address: 172.16.1.12
     volumes:
-    - ./certs:/certs
+      - ./certs:/certs
     restart: unless-stopped
-       
+
   eventstore3:
-    image: eventstore/eventstore:21.2.0-buster-slim
+    image: eventstore/eventstore:21.6.0-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
 
   eventstore4:
-    image: eventstore/eventstore:21.2.0-buster-slim
+    image: eventstore/eventstore:21.6.0-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -75,11 +75,11 @@ services:
       clusternetwork:
         ipv4_address: 172.16.1.14
     volumes:
-    - ./certs:/certs
+      - ./certs:/certs
     restart: unless-stopped
 
   eventstore-ro-replica:
-    image: eventstore/eventstore:20.6.0-buster-slim
+    image: eventstore/eventstore:21.6.0-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -95,42 +95,41 @@ services:
       clusternetwork:
         ipv4_address: 172.16.1.15
     volumes:
-    - ./certs:/certs
+      - ./certs:/certs
     restart: unless-stopped
-  
+
   prometheus:
     image: prom/prometheus:v2.26.0
     command:
-    - --storage.tsdb.path=/prometheus
-    - --storage.tsdb.retention=30d
-    - --config.file=/etc/prometheus/prometheus.yml
-    - --web.enable-lifecycle
-    - --web.enable-admin-api
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention=30d
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+      - --web.enable-admin-api
     volumes:
-    - ../common/prometheus-config:/etc/prometheus/
+      - ../common/prometheus-config:/etc/prometheus/
     ports:
-    - 9090:9090
+      - 9090:9090
 
   grafana:
     image: grafana/grafana:7.5.2
     depends_on:
-    - prometheus
+      - prometheus
     environment:
-    - GF_AUTH_ANONYMOUS_ENABLED=true
-    - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-    - grafana-volume:/var/lib/grafana
+      - grafana-volume:/var/lib/grafana
     ports:
-    - 3000:3000
+      - 3000:3000
 
   grafana-init:
     image: alpine:3.13
-    depends_on: 
-    - grafana
+    depends_on:
+      - grafana
     volumes:
       - ../common/init:/root/init/
     command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
-
 
 networks:
   clusternetwork:
@@ -138,7 +137,7 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: 172.16.1.0/24
+        - subnet: 172.16.1.0/24
 
 volumes:
   grafana-volume:
