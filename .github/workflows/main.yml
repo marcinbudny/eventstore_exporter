@@ -25,7 +25,6 @@ jobs:
       eventstore:
         image: eventstore/eventstore:${{ matrix.esVersion }}
         env:
-          EVENTSTORE_DEV: 'True'
           EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
           EVENTSTORE_INSECURE: 'True'
           EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
