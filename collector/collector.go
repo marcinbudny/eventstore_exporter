@@ -159,7 +159,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, getProcessCPU(stats))
 
-		if stats.EsVersion.IsVersionLowerThan("20.6.0.0") {
+		if stats.EsVersion.ReportsCpuScaled() {
 			ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
 		}
 
@@ -172,7 +172,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, getTCPReceivedBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, getTCPConnections(stats))
 
-		if stats.EsVersion.IsAtLeastVersion("20.6.0.0") {
+		if stats.EsVersion.UsesLeaderFollowerNomenclature() {
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
 			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
@@ -208,12 +208,12 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 func collectPerMemberMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
 
-	is206Plus := stats.EsVersion.IsAtLeastVersion("20.6.0.0")
+	httpEndPointNomenclature := stats.EsVersion.UsesHttpEndPointNomenclature()
 
 	jp.ArrayEach(stats.GossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		ip := ""
 		port := int64(0)
-		if is206Plus {
+		if httpEndPointNomenclature {
 			ip, _ = jp.GetString(jsonValue, "httpEndPointIp")
 			port, _ = jp.GetInt(jsonValue, "httpEndPointPort")
 

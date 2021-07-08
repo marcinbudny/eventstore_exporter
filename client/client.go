@@ -161,6 +161,18 @@ func (esVersion EventStoreVersion) ReportsParkedMessageNumber() bool {
 	return esVersion.IsAtLeastVersion("21.2.0.0")
 }
 
+func (esVersion EventStoreVersion) UsesLeaderFollowerNomenclature() bool {
+	return esVersion.IsAtLeastVersion("20.6.0.0")
+}
+
+func (esVersion EventStoreVersion) UsesHttpEndPointNomenclature() bool {
+	return esVersion.IsAtLeastVersion("20.6.0.0")
+}
+
+func (esVersion EventStoreVersion) ReportsCpuScaled() bool {
+	return esVersion.IsVersionLowerThan("20.6.0.0")
+}
+
 func (esVersion EventStoreVersion) IsAtLeastVersion(minVersion string) bool {
 	ver, err := version.NewVersion(string(esVersion))
 	if err != nil {
