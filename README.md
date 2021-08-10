@@ -1,4 +1,5 @@
 # EventStore Prometheus exporter
+
 EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
 
 ## Installation
@@ -32,25 +33,40 @@ docker run -d -p 9448:9448 \
 
 ### Supported versions
 
-* 5.0
-* 20.10 LTS
-* 21.2
+- 5.0
+- 20.10 LTS
+- 21.2
 
 ## Configuration
 
 The exporter can be configured with commandline arguments, environment variables and a configuration file. For the details on how to format the configuration file, visit [namsral/flag](https://github.com/namsral/flag) repo.
 
-|Flag|ENV variable|Default|Meaning|
-|---|---|---|---|
-|--eventstore-url|EVENTSTORE_URL|http://localhost:2113|Eventstore HTTP endpoint|
-|--eventstore-user|EVENTSTORE_USER|(empty)|Eventstore user (if not specified, basic auth is not used)|
-|--eventstore-password|EVENTSTORE_PASSWORD|(empty)|Eventstore password  (if not specified, basic auth is not used)|
-|--cluster-mode|CLUSTER_MODE|cluster|Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster node. This settings decides whether gossip stats endpoint is queired. **Note:** Starting with ES 21.2, the gossip endpoint responds to queries even for single node installation. So if using this version, you can ignore this setting and leave it at default value.|
-|--port|PORT|9448|Port to expose scrape endpoint on|
-|--timeout|TIMEOUT|10s|Timeout when calling EventStore|
-|--verbose|VERBOSE|false|Enable verbose logging|
-|--insecure-skip-verify|INSECURE_SKIP_VERIFY|false|Skip TLS certificatte verification for EventStore HTTP client|
-|--enable-parked-messages-stats|ENABLE_PARKED_MESSAGES_STATS|false|Enable parked messages stats scraping. **Note:** for ES 20.10+ you need to enable Atom Pub over HTTP in EventStoreDB to get subscriptions stats. For ES 21.2+, number of parked messages can be extracted without enabling AtomPub, but not the age of the oldest message.|
+| Flag                           | ENV variable                 | Default               | Meaning                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --config                       |                              |                       | Path to config file (optional)                                                                                                                                                                                                                                                                                                                                            |
+| --eventstore-url               | EVENTSTORE_URL               | http://localhost:2113 | Eventstore HTTP endpoint                                                                                                                                                                                                                                                                                                                                                  |
+| --eventstore-user              | EVENTSTORE_USER              | (empty)               | Eventstore user (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                                |
+| --eventstore-password          | EVENTSTORE_PASSWORD          | (empty)               | Eventstore password (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                            |
+| --cluster-mode                 | CLUSTER_MODE                 | cluster               | Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster node. This settings decides whether gossip stats endpoint is queired. **Note:** Starting with ES 21.2, the gossip endpoint responds to queries even for single node installation. So if using this version, you can ignore this setting and leave it at default value. |
+| --port                         | PORT                         | 9448                  | Port to expose scrape endpoint on                                                                                                                                                                                                                                                                                                                                         |
+| --timeout                      | TIMEOUT                      | 10s                   | Timeout when calling EventStore                                                                                                                                                                                                                                                                                                                                           |
+| --verbose                      | VERBOSE                      | false                 | Enable verbose logging                                                                                                                                                                                                                                                                                                                                                    |
+| --insecure-skip-verify         | INSECURE_SKIP_VERIFY         | false                 | Skip TLS certificatte verification for EventStore HTTP client                                                                                                                                                                                                                                                                                                             |
+| --enable-parked-messages-stats | ENABLE_PARKED_MESSAGES_STATS | false                 | Enable parked messages stats scraping. **Note:** for ES 20.10+ you need to enable Atom Pub over HTTP in EventStoreDB to get subscriptions stats. For ES 21.2+, number of parked messages can be extracted without enabling AtomPub, but not the age of the oldest message.                                                                                                |
+
+Sample configuration file
+
+```
+eventstore-url=http://localhost:2113
+port=8888
+verbose
+```
+
+To run with configuration file:
+
+```bash
+./eventstore_exporter --config my_config_file
+```
 
 ## Grafana dashboard
 
@@ -163,51 +179,66 @@ eventstore_up 1
 
 ## Changelog
 
+### 0.10.2
+
+- FIX: ability to properly load config files
+
 ### 0.10.1
-* FIX: fixed memory leak occurring when calls to ESDB fail
+
+- FIX: fixed memory leak occurring when calls to ESDB fail
 
 ### 0.10.0
-* BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
-* BREAKING: The `cpu_scaled` metric is only available for ES version 5
-* FEATURE: It is now possible to get subscription parked message count even if Atom Pub over HTTP is disabled (requires ES 21.2+)
-* FEATURE: Updated Grafana dashboard to include parked message count and oldest parked message age and also adjusted member status presentation to the breaking change - update to dashboard revision 7
-* OTHER: Docker image is now based on Go 1.16.3
+
+- BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
+- BREAKING: The `cpu_scaled` metric is only available for ES version 5
+- FEATURE: It is now possible to get subscription parked message count even if Atom Pub over HTTP is disabled (requires ES 21.2+)
+- FEATURE: Updated Grafana dashboard to include parked message count and oldest parked message age and also adjusted member status presentation to the breaking change - update to dashboard revision 7
+- OTHER: Docker image is now based on Go 1.16.3
 
 ### 0.9.0
-* FEATURE: parked message metrics (note: enable them with `--enable-parked-messages-stats` flag)
+
+- FEATURE: parked message metrics (note: enable them with `--enable-parked-messages-stats` flag)
 
 ### 0.8.1
-* FIX: in some cases /stats endpoint scrape will fail due to missing Accept header - see #13
+
+- FIX: in some cases /stats endpoint scrape will fail due to missing Accept header - see #13
 
 ### 0.8.0
-* FEATURE: support for ES 20.6 - see #12
-* FEATURE: option to ignore invalid certificates on HTTPS connection - see #11
-* FIX: moved to stateless metrics, that should fix the problem (without a workaround) of zombie metrics after projection / member / subscription has been removed 
+
+- FEATURE: support for ES 20.6 - see #12
+- FEATURE: option to ignore invalid certificates on HTTPS connection - see #11
+- FIX: moved to stateless metrics, that should fix the problem (without a workaround) of zombie metrics after projection / member / subscription has been removed
 
 ### 0.7.0
-* FIX: for items of variable count (queues, drives, projections, subscriptions, members) the exporter should not return items that have been removed (see #7)
+
+- FIX: for items of variable count (queues, drives, projections, subscriptions, members) the exporter should not return items that have been removed (see #7)
 
 ### 0.6.0
-* FEATURE: add HTTP Basic auth to support EventStore 5.0.2+ (see #6)
-* FIX: when status code of http call does not indicate success, the exporter will now log a message and it won't report metrics
+
+- FEATURE: add HTTP Basic auth to support EventStore 5.0.2+ (see #6)
+- FIX: when status code of http call does not indicate success, the exporter will now log a message and it won't report metrics
 
 ### 0.5.0
-* FEATURE: new metrics for detecting cluster node status: `eventstore_cluster_member_is_slave` and `eventstore_cluster_member_is_clone`
+
+- FEATURE: new metrics for detecting cluster node status: `eventstore_cluster_member_is_slave` and `eventstore_cluster_member_is_clone`
 
 ### 0.4.0
-* FEATURE: persistent subscription metrics
+
+- FEATURE: persistent subscription metrics
 
 ### 0.3.0
-* FEATURE: added drive metrics
+
+- FEATURE: added drive metrics
 
 ### 0.2.0
-* FIX: missing `eventstore_process_memory_bytes` metric
-* BREAKING: `eventstore_projection_events_processed_after_restart` metric renamed to `eventstore_projection_events_processed_after_restart_total` to comply with Prometheus metric naming rules
+
+- FIX: missing `eventstore_process_memory_bytes` metric
+- BREAKING: `eventstore_projection_events_processed_after_restart` metric renamed to `eventstore_projection_events_processed_after_restart_total` to comply with Prometheus metric naming rules
 
 ### 0.1.1
 
-* experimenting with dockerhub tags
+- experimenting with dockerhub tags
 
-### 0.1.0 
+### 0.1.0
 
-* Initial version
+- Initial version

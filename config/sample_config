@@ -1,0 +1,9 @@
+timeout=20s
+port=1231
+verbose
+insecure-skip-verify
+eventstore-url=https://somewhere_else
+eventstore-password=password
+eventstore-user=user
+cluster-mode=single
+enable-parked-messages-stats=true

@@ -9,7 +9,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	clearEnvironment()
+	defer clearEnvironment()
 
 	tests := []struct {
 		name           string
@@ -97,6 +97,8 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigFromEnvironment(t *testing.T) {
+	defer clearEnvironment()
+
 	os.Setenv("TIMEOUT", "20s")
 	os.Setenv("PORT", "1231")
 	os.Setenv("INSECURE_SKIP_VERIFY", "true")
@@ -120,6 +122,32 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	}
 
 	if cfg, err := Load([]string{}, true); err == nil {
+		if diff := cmp.Diff(*cfg, expectedConfig); diff != "" {
+			t.Errorf("wrong config returned, diff: %v", diff)
+		}
+	} else {
+		t.Errorf("unexpected error %v", err)
+	}
+}
+
+func TestLoadConfigFromFile(t *testing.T) {
+	defer clearEnvironment()
+
+	args := []string{"-config=sample_config"}
+
+	expectedConfig := Config{
+		Timeout:                   time.Duration(20 * time.Second),
+		Port:                      1231,
+		Verbose:                   true,
+		InsecureSkipVerify:        true,
+		EventStoreURL:             "https://somewhere_else",
+		EventStoreUser:            "user",
+		EventStorePassword:        "password",
+		ClusterMode:               "single",
+		EnableParkedMessagesStats: true,
+	}
+
+	if cfg, err := Load(args, true); err == nil {
 		if diff := cmp.Diff(*cfg, expectedConfig); diff != "" {
 			t.Errorf("wrong config returned, diff: %v", diff)
 		}

@@ -23,6 +23,7 @@ type Config struct {
 
 func createFlagSet(config *Config) *flag.FlagSet {
 	fs := flag.NewFlagSet("flagset", flag.ContinueOnError)
+	fs.String(flag.DefaultConfigFlagname, "", "Path to config file")
 	fs.StringVar(&config.EventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
 	fs.StringVar(&config.EventStoreUser, "eventstore-user", "", "EventStore User")
 	fs.StringVar(&config.EventStorePassword, "eventstore-password", "", "EventStore Password")
