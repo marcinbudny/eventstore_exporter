@@ -35,7 +35,7 @@ docker run -d -p 9448:9448 \
 
 - 5.0
 - 20.10 LTS
-- 21.2
+- 21.6
 
 ## Configuration
 

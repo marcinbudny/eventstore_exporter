@@ -2,7 +2,7 @@ version: '3'
 
 services:
   eventstore1:
-    image: eventstore/eventstore:20.10.2-buster-slim
+    image: eventstore/eventstore:20.10.4-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 
   eventstore2:
-    image: eventstore/eventstore:20.10.2-buster-slim
+    image: eventstore/eventstore:20.10.4-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
 
   eventstore3:
-    image: eventstore/eventstore:20.10.2-buster-slim
+    image: eventstore/eventstore:20.10.4-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
 
   eventstore4:
-    image: eventstore/eventstore:20.10.2-buster-slim
+    image: eventstore/eventstore:20.10.4-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -79,7 +79,7 @@ services:
     restart: unless-stopped
 
   eventstore-ro-replica:
-    image: eventstore/eventstore:20.10.2-buster-slim
+    image: eventstore/eventstore:20.10.4-buster-slim
     env_file:
       - common-variables.env
     environment:
