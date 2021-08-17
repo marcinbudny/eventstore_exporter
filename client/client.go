@@ -340,7 +340,7 @@ func (esClient *EventStoreStatsClient) getParkedMessagesStatsViaGroupInfo(subscr
 		eventStreamID, _ := jp.GetString(jsonValue, "eventStreamId")
 		groupName, _ := jp.GetString(jsonValue, "groupName")
 
-		groupInfoURL := fmt.Sprintf("http://127.0.0.1:2113/subscriptions/test-stream/%s/info", groupName)
+		groupInfoURL := fmt.Sprintf("/subscriptions/%s/%s/info", eventStreamID, groupName)
 		groupInfoChan := esClient.get(groupInfoURL, false)
 		groupInfoResult := <-groupInfoChan
 

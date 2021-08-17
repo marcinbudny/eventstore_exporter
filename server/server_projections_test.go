@@ -6,20 +6,20 @@ import (
 	"testing"
 )
 
-func TestProjectionMetrics(t *testing.T) {
+func Test_ProjectionMetrics(t *testing.T) {
 	if !shouldRunProjectionsTest() {
 		t.Log("Skipping projection metrics")
 		return
 	}
 
-	es := prepareExporterServer("")
+	es := prepareExporterServer()
 	ts := httptest.NewServer(es.mux)
 	defer ts.Close()
 
 	metrics := getMetrics(ts.URL, t)
-	assertHasMetric("eventstore_projection_running", "gauge", metrics, t)
-	assertHasMetric("eventstore_projection_progress", "gauge", metrics, t)
-	assertHasMetric("eventstore_projection_events_processed_after_restart_total", "counter", metrics, t)
+	assertHasMetric(t, metrics, "eventstore_projection_running", "gauge")
+	assertHasMetric(t, metrics, "eventstore_projection_progress", "gauge")
+	assertHasMetric(t, metrics, "eventstore_projection_events_processed_after_restart_total", "counter")
 }
 
 func shouldRunProjectionsTest() bool {

@@ -6,65 +6,54 @@ import (
 	"testing"
 )
 
-func TestLandingPage(t *testing.T) {
-	es := prepareExporterServer("")
+func Test_LandingPage(t *testing.T) {
+	es := prepareExporterServer()
 	ts := httptest.NewServer(es.mux)
 	defer ts.Close()
 
-	content := getString(ts.URL, t)
+	content := getStringFromExporterEndpoint(ts.URL, t)
 
 	if !strings.Contains(string(content), "EventStore exporter") {
-		t.Errorf("Expected content to have 'EventSTore exporeter' but got %s", content)
+		t.Errorf("Expected content to have 'EventStore exporter' but got %s", content)
 	}
 }
 
-func TestBasicMetrics(t *testing.T) {
-	es := prepareExporterServer("")
+func Test_BasicMetrics(t *testing.T) {
+	es := prepareExporterServer()
 	ts := httptest.NewServer(es.mux)
 	defer ts.Close()
 
 	metrics := getMetrics(ts.URL, t)
-	assertHasMetric("eventstore_up", "gauge", metrics, t)
-	assertHasMetric("eventstore_disk_io_read_bytes", "gauge", metrics, t)
-	assertHasMetric("eventstore_disk_io_read_ops", "gauge", metrics, t)
-	assertHasMetric("eventstore_disk_io_write_ops", "gauge", metrics, t)
-	assertHasMetric("eventstore_disk_io_written_bytes", "gauge", metrics, t)
-	assertHasMetric("eventstore_drive_available_bytes", "gauge", metrics, t)
-	assertHasMetric("eventstore_process_cpu", "gauge", metrics, t)
-	assertHasMetric("eventstore_process_memory_bytes", "gauge", metrics, t)
-	assertHasMetric("eventstore_queue_items_processed_total", "counter", metrics, t)
-	assertHasMetric("eventstore_queue_length", "gauge", metrics, t)
-	assertHasMetric("eventstore_tcp_connections", "gauge", metrics, t)
-	assertHasMetric("eventstore_tcp_received_bytes", "gauge", metrics, t)
-	assertHasMetric("eventstore_tcp_sent_bytes", "gauge", metrics, t)
+	assertHasMetric(t, metrics, "eventstore_up", "gauge")
+	assertHasMetric(t, metrics, "eventstore_disk_io_read_bytes", "gauge")
+	assertHasMetric(t, metrics, "eventstore_disk_io_read_ops", "gauge")
+	assertHasMetric(t, metrics, "eventstore_disk_io_write_ops", "gauge")
+	assertHasMetric(t, metrics, "eventstore_disk_io_written_bytes", "gauge")
+	assertHasMetric(t, metrics, "eventstore_drive_available_bytes", "gauge")
+	assertHasMetric(t, metrics, "eventstore_process_cpu", "gauge")
+	assertHasMetric(t, metrics, "eventstore_process_memory_bytes", "gauge")
+	assertHasMetric(t, metrics, "eventstore_queue_items_processed_total", "counter")
+	assertHasMetric(t, metrics, "eventstore_queue_length", "gauge")
+	assertHasMetric(t, metrics, "eventstore_tcp_connections", "gauge")
+	assertHasMetric(t, metrics, "eventstore_tcp_received_bytes", "gauge")
+	assertHasMetric(t, metrics, "eventstore_tcp_sent_bytes", "gauge")
 }
 
-func TestEventStoreUp(t *testing.T) {
-	tests := []struct {
-		name            string
-		eventStoreURL   string
-		expectedUpValue float64
-	}{
-		{
-			name:            "eventstore_up should be 1 if it can connect to ES",
-			eventStoreURL:   "",
-			expectedUpValue: 1,
-		},
-		{
-			name:            "eventstore_up should be 0 if it cannot connect to ES",
-			eventStoreURL:   "http://does_not_exist",
-			expectedUpValue: 0,
-		},
-	}
+func Test_EventStoreUp_Up(t *testing.T) {
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			es := prepareExporterServer(test.eventStoreURL)
-			ts := httptest.NewServer(es.mux)
-			defer ts.Close()
+	es := prepareExporterServer()
+	ts := httptest.NewServer(es.mux)
+	defer ts.Close()
 
-			metrics := getMetrics(ts.URL, t)
-			assertMetricValue("eventstore_up", "gauge", test.expectedUpValue, metrics, t)
-		})
-	}
+	metrics := getMetrics(ts.URL, t)
+	assertMetric(t, metrics, "eventstore_up", "gauge", singleValuedMetric, hasValue(1))
+}
+
+func Test_EventStoreUp_Down(t *testing.T) {
+	es := prepareExporterServerWithInvalidConnection()
+	ts := httptest.NewServer(es.mux)
+	defer ts.Close()
+
+	metrics := getMetrics(ts.URL, t)
+	assertMetric(t, metrics, "eventstore_up", "gauge", singleValuedMetric, hasValue(0))
 }
