@@ -179,6 +179,10 @@ eventstore_up 1
 
 ## Changelog
 
+### 0.10.3
+
+- FIX: fixed parked message count based on group info (when atom pub is disabled)
+
 ### 0.10.2
 
 - FIX: ability to properly load config files
