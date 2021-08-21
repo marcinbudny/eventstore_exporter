@@ -6,7 +6,7 @@ EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
 
 ### From source
 
-You need to have a Go 1.16+ environment configured.
+You need to have a Go 1.17+ environment configured.
 
 ```bash
 go get github.com/marcinbudny/eventstore_exporter
