@@ -1,4 +1,4 @@
-# EventStore Prometheus exporter
+# EventStoreDB Prometheus exporter
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/marcinbudny/eventstore_exporter)](https://goreportcard.com/report/github.com/marcinbudny/eventstore_exporter)
 [![CI](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml/badge.svg)](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml)
@@ -7,19 +7,16 @@ EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
 
 ## Installation
 
-### From source
+### Using binaries
 
-You need to have a Go 1.17+ environment configured.
+Download latest binaries from the [releases page](https://github.com/marcinbudny/eventstore_exporter/releases).
 
 ```bash
-go get github.com/marcinbudny/eventstore_exporter
-
 eventstore_exporter \
-    --eventstore-url=https://localhost:2113 \
+    --eventstore-url=https://my-eventstore:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
     --cluster-mode=single \
-    --insecure-skip-verify \
     --enable-parked-messages-stats
 ```
 
@@ -31,14 +28,32 @@ docker run -d -p 9448:9448 \
     -e CLUSTER_MODE=single \
     -e EVENTSTORE_USER=admin \
     -e EVENTSTORE_PASSWORD=changeit \
+    -e ENABLE_PARKED_MESSAGES_STATS=True \
     marcinbudny/eventstore_exporter
 ```
 
-### Supported versions
+### From source
+
+You need to have a Go 1.17+ environment configured.
+
+```bash
+go install github.com/marcinbudny/eventstore_exporter@latest
+
+eventstore_exporter \
+    --eventstore-url=https://my-eventstore:2113 \
+    --eventstore-user=admin \
+    --eventstore-password=changeit \
+    --cluster-mode=single \
+    --enable-parked-messages-stats
+```
+
+### Supported EventStoreDB versions
 
 - 5.0
 - 20.10 LTS
 - 21.6
+
+Other versions may also work but are not tested.
 
 ## Configuration
 
@@ -179,73 +194,3 @@ eventstore_tcp_sent_bytes 3423
 # TYPE eventstore_up gauge
 eventstore_up 1
 ```
-
-## Changelog
-
-### 0.10.3
-
-- FIX: fixed parked message count based on group info (when atom pub is disabled)
-
-### 0.10.2
-
-- FIX: ability to properly load config files
-
-### 0.10.1
-
-- FIX: fixed memory leak occurring when calls to ESDB fail
-
-### 0.10.0
-
-- BREAKING: The `is_master` and `is_slave` metrics are now only exported for ES version 5, while `is_leader`, `is_follower`, `is_readonly_replica` for ES versions 20.6+
-- BREAKING: The `cpu_scaled` metric is only available for ES version 5
-- FEATURE: It is now possible to get subscription parked message count even if Atom Pub over HTTP is disabled (requires ES 21.2+)
-- FEATURE: Updated Grafana dashboard to include parked message count and oldest parked message age and also adjusted member status presentation to the breaking change - update to dashboard revision 7
-- OTHER: Docker image is now based on Go 1.16.3
-
-### 0.9.0
-
-- FEATURE: parked message metrics (note: enable them with `--enable-parked-messages-stats` flag)
-
-### 0.8.1
-
-- FIX: in some cases /stats endpoint scrape will fail due to missing Accept header - see #13
-
-### 0.8.0
-
-- FEATURE: support for ES 20.6 - see #12
-- FEATURE: option to ignore invalid certificates on HTTPS connection - see #11
-- FIX: moved to stateless metrics, that should fix the problem (without a workaround) of zombie metrics after projection / member / subscription has been removed
-
-### 0.7.0
-
-- FIX: for items of variable count (queues, drives, projections, subscriptions, members) the exporter should not return items that have been removed (see #7)
-
-### 0.6.0
-
-- FEATURE: add HTTP Basic auth to support EventStore 5.0.2+ (see #6)
-- FIX: when status code of http call does not indicate success, the exporter will now log a message and it won't report metrics
-
-### 0.5.0
-
-- FEATURE: new metrics for detecting cluster node status: `eventstore_cluster_member_is_slave` and `eventstore_cluster_member_is_clone`
-
-### 0.4.0
-
-- FEATURE: persistent subscription metrics
-
-### 0.3.0
-
-- FEATURE: added drive metrics
-
-### 0.2.0
-
-- FIX: missing `eventstore_process_memory_bytes` metric
-- BREAKING: `eventstore_projection_events_processed_after_restart` metric renamed to `eventstore_projection_events_processed_after_restart_total` to comply with Prometheus metric naming rules
-
-### 0.1.1
-
-- experimenting with dockerhub tags
-
-### 0.1.0
-
-- Initial version
