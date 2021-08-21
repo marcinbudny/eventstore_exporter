@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	jp "github.com/buger/jsonparser"
-	"github.com/marcinbudny/eventstore_exporter/config"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
 type EventStoreStatsClient struct {

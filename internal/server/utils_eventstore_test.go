@@ -10,7 +10,7 @@ import (
 
 	esclient "github.com/EventStore/EventStore-Client-Go/client"
 	jp "github.com/buger/jsonparser"
-	"github.com/marcinbudny/eventstore_exporter/client"
+	"github.com/marcinbudny/eventstore_exporter/internal/client"
 )
 
 func getEventstoreHttpClient() *http.Client {

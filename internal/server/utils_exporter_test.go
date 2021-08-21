@@ -4,9 +4,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/marcinbudny/eventstore_exporter/client"
-	"github.com/marcinbudny/eventstore_exporter/collector"
-	"github.com/marcinbudny/eventstore_exporter/config"
+	"github.com/marcinbudny/eventstore_exporter/internal/client"
+	"github.com/marcinbudny/eventstore_exporter/internal/collector"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
 func prepareExporterServer() *ExporterServer {

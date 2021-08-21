@@ -5,10 +5,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/marcinbudny/eventstore_exporter/client"
-	"github.com/marcinbudny/eventstore_exporter/collector"
-	"github.com/marcinbudny/eventstore_exporter/config"
-	"github.com/marcinbudny/eventstore_exporter/server"
+	"github.com/marcinbudny/eventstore_exporter/internal/client"
+	"github.com/marcinbudny/eventstore_exporter/internal/collector"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
+	"github.com/marcinbudny/eventstore_exporter/internal/server"
 )
 
 func readAndValidateConfig() *config.Config {

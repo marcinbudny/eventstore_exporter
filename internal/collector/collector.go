@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	jp "github.com/buger/jsonparser"
-	"github.com/marcinbudny/eventstore_exporter/client"
-	"github.com/marcinbudny/eventstore_exporter/config"
+	"github.com/marcinbudny/eventstore_exporter/internal/client"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )

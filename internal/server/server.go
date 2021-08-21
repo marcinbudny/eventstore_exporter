@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/marcinbudny/eventstore_exporter/collector"
-	"github.com/marcinbudny/eventstore_exporter/config"
+	"github.com/marcinbudny/eventstore_exporter/internal/collector"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
