@@ -247,7 +247,7 @@ func ackMessages(t *testing.T, ackCount int, readClient persistent.SyncReadConne
 		if readEvent, err := readClient.Read(); err != nil {
 			t.Fatal(err)
 		} else {
-			readClient.Ack(readEvent.EventID)
+			readClient.Ack(readEvent.Event.EventID)
 		}
 	}
 }
@@ -258,7 +258,7 @@ func parkMessages(t *testing.T, parkCount int, readClient persistent.SyncReadCon
 		if readEvent, err := readClient.Read(); err != nil {
 			t.Fatal(err)
 		} else {
-			readClient.Nack("test", persistent.Nack_Park, readEvent.EventID)
+			readClient.Nack("test", persistent.Nack_Park, readEvent.Event.EventID)
 		}
 	}
 }
