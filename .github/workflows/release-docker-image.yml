@@ -2,7 +2,7 @@ name: Release Docker image
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
   docker-image:
@@ -21,6 +21,8 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: marcinbudny/eventstore_exporter
+          tags: |
+            type=semver,pattern={{version}}
 
       - name: Build and push
         uses: docker/build-push-action@v2
