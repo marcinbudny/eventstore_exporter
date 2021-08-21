@@ -1,5 +1,8 @@
 # EventStore Prometheus exporter
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/marcinbudny/eventstore_exporter)](https://goreportcard.com/report/github.com/marcinbudny/eventstore_exporter)
+[![CI](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml/badge.svg)](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml)
+
 EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
 
 ## Installation
