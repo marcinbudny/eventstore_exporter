@@ -49,11 +49,14 @@ eventstore_exporter \
 
 ### Supported EventStoreDB versions
 
-- 5.0
 - 20.10 LTS
-- 21.6
+- 21.10 LTS
 
 Other versions may also work but are not tested.
+
+### Unsupported versions
+
+- 5.0 (last supported in exporter version v0.10.4)
 
 ## Configuration
 

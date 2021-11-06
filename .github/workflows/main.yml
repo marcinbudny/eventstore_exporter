@@ -12,9 +12,8 @@ jobs:
     strategy:
       matrix:
         esVersion:
-          - release-5.0.10
-          - 21.6.0-buster-slim
           - 20.10.4-buster-slim
+          - 21.10.0-buster-slim
 
     name: tests on ES ${{ matrix.esVersion }}
 
