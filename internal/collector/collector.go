@@ -38,8 +38,6 @@ type Collector struct {
 	projectionEventsProcessedAfterRestart *prometheus.Desc
 
 	clusterMemberAlive             *prometheus.Desc
-	clusterMemberIsMaster          *prometheus.Desc
-	clusterMemberIsSlave           *prometheus.Desc
 	clusterMemberIsClone           *prometheus.Desc
 	clusterMemberIsLeader          *prometheus.Desc
 	clusterMemberIsFollower        *prometheus.Desc
@@ -83,12 +81,10 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		projectionEventsProcessedAfterRestart: prometheus.NewDesc("eventstore_projection_events_processed_after_restart_total", "Projection event processed count after restart", []string{"projection"}, nil),
 
 		clusterMemberAlive:             prometheus.NewDesc("eventstore_cluster_member_alive", "If 1, cluster member is alive, as seen from current cluster member", []string{"member"}, nil),
-		clusterMemberIsMaster:          prometheus.NewDesc("eventstore_cluster_member_is_master", "If 1, current cluster member is the master (only versions < 20.6)", nil, nil),
-		clusterMemberIsSlave:           prometheus.NewDesc("eventstore_cluster_member_is_slave", "If 1, current cluster member is a slave (only versions < 20.6)", nil, nil),
 		clusterMemberIsClone:           prometheus.NewDesc("eventstore_cluster_member_is_clone", "If 1, current cluster member is a clone", nil, nil),
-		clusterMemberIsLeader:          prometheus.NewDesc("eventstore_cluster_member_is_leader", "If 1, current cluster member is the leader (only versions >= 20.6)", nil, nil),
-		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower (only versions >= 20.6)", nil, nil),
-		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica (only versions >= 20.6)", nil, nil),
+		clusterMemberIsLeader:          prometheus.NewDesc("eventstore_cluster_member_is_leader", "If 1, current cluster member is the leader", nil, nil),
+		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower", nil, nil),
+		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica", nil, nil),
 
 		subscriptionTotalItemsProcessed:         prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionLastProcessedEventNumber:    prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
@@ -126,8 +122,6 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 	if c.config.IsInClusterMode() {
 		ch <- c.clusterMemberAlive
-		ch <- c.clusterMemberIsMaster
-		ch <- c.clusterMemberIsSlave
 		ch <- c.clusterMemberIsClone
 		ch <- c.clusterMemberIsLeader
 		ch <- c.clusterMemberIsFollower

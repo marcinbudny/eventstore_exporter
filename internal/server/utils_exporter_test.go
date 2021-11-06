@@ -17,7 +17,6 @@ func prepareExporterServer() *ExporterServer {
 		clusterMode = os.Getenv("TEST_CLUSTER_MODE")
 	}
 
-	//_, enableParkedMessagesStats := os.LookupEnv("TEST_ENABLE_PARKED_MESSAGE_STATS")
 	enableParkedMessagesStats := true
 
 	config := &config.Config{

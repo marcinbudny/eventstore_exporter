@@ -106,21 +106,15 @@ eventstore_cluster_member_alive{member="172.16.1.11:2113"} 1
 # HELP eventstore_cluster_member_is_clone If 1, current cluster member is a clone
 # TYPE eventstore_cluster_member_is_clone gauge
 eventstore_cluster_member_is_clone 1
-# HELP eventstore_cluster_member_is_follower If 1, current cluster member is a follower (only versions >= 20.6)
+# HELP eventstore_cluster_member_is_follower If 1, current cluster member is a follower
 # TYPE eventstore_cluster_member_is_follower gauge
 eventstore_cluster_member_is_follower 0
-# HELP eventstore_cluster_member_is_leader If 1, current cluster member is the leader (only versions >= 20.6)
+# HELP eventstore_cluster_member_is_leader If 1, current cluster member is the leader
 # TYPE eventstore_cluster_member_is_leader gauge
 eventstore_cluster_member_is_leader 0
-# HELP eventstore_cluster_member_is_master If 1, current cluster member is the master (only versions < 20.6)
-# TYPE eventstore_cluster_member_is_master gauge
-eventstore_cluster_member_is_master 0
-# HELP eventstore_cluster_member_is_readonly_replica If 1, current cluster member is a readonly replica (only versions >= 20.6)
+# HELP eventstore_cluster_member_is_readonly_replica If 1, current cluster member is a readonly replica
 # TYPE eventstore_cluster_member_is_readonly_replica gauge
 eventstore_cluster_member_is_readonly_replica 0
-# HELP eventstore_cluster_member_is_slave If 1, current cluster member is a slave (only versions < 20.6)
-# TYPE eventstore_cluster_member_is_slave gauge
-eventstore_cluster_member_is_slave 0
 # HELP eventstore_disk_io_read_bytes Total number of disk IO read bytes
 # TYPE eventstore_disk_io_read_bytes gauge
 eventstore_disk_io_read_bytes 20480
@@ -142,9 +136,6 @@ eventstore_drive_total_bytes{drive="/var/lib/eventstore"} 6.2725787648e+10
 # HELP eventstore_process_cpu Process CPU usage, 0 - number of cores
 # TYPE eventstore_process_cpu gauge
 eventstore_process_cpu 0.08
-# HELP eventstore_process_cpu_scaled Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores (available only on versions < 20.6)
-# TYPE eventstore_process_cpu_scaled gauge
-eventstore_process_cpu_scaled 0
 # HELP eventstore_process_memory_bytes Process memory usage, as reported by EventStore
 # TYPE eventstore_process_memory_bytes gauge
 eventstore_process_memory_bytes 1.19267328e+08

@@ -114,10 +114,6 @@ func Test_OldestParkedMessage_SubscriptionMetric(t *testing.T) {
 // }
 
 func shouldRunSubscriptionTests(t *testing.T) bool {
-	if getEsVersion(t).IsVersionLowerThan("20.6.0.0") {
-		return false
-	}
-
 	// do not run in cluster mode, as this causes issues when not connected to leader node
 	return os.Getenv("TEST_CLUSTER_MODE") != "cluster"
 }
