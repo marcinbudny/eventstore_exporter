@@ -3,7 +3,7 @@ module github.com/marcinbudny/eventstore_exporter
 go 1.17
 
 require (
-	github.com/EventStore/EventStore-Client-Go v0.0.0-20210817115103-dbbe2b1f2708
+	github.com/EventStore/EventStore-Client-Go v1.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/google/go-cmp v0.5.6

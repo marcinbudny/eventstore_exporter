@@ -7,12 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/messages"
-	"github.com/EventStore/EventStore-Client-Go/persistent"
-	"github.com/EventStore/EventStore-Client-Go/streamrevision"
 	"github.com/gofrs/uuid"
 
-	esclient "github.com/EventStore/EventStore-Client-Go/client"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 )
 
 func Test_Basic_SubscriptionMetrics(t *testing.T) {
@@ -148,10 +145,10 @@ func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, 
 
 	createSubscription(t, streamID, groupName, client)
 
-	readClient := connectToSubscription(t, streamID, groupName, client)
+	subscription := connectToSubscription(t, streamID, groupName, client)
 
-	ackMessages(t, ackCount, readClient)
-	parkMessages(t, parkCount, readClient)
+	ackMessages(t, ackCount, subscription)
+	parkMessages(t, parkCount, subscription)
 
 	time.Sleep(time.Millisecond * 2000)
 	client.Close()
@@ -198,67 +195,58 @@ func newStreamAndGroup() (streamID string, groupName string) {
 	return
 }
 
-func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esclient.Client) {
-	events := make([]messages.ProposedEvent, 0)
+func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
+	events := make([]esdb.EventData, 0)
 	for i := 0; i < eventCount; i++ {
-		eventID, _ := uuid.NewV4()
-		events = append(events, messages.ProposedEvent{
-			EventID:     eventID,
+		//eventID, _ := uuid.NewV4()
+		events = append(events, esdb.EventData{
+			//EventID:     eventID,
 			EventType:   "TestEvent",
-			ContentType: "application/octet-stream",
+			ContentType: esdb.BinaryContentType,
 			Data:        []byte{0xb, 0xe, 0xe, 0xf},
 		})
 	}
 
-	if _, err := client.AppendToStream(context.Background(), streamID, streamrevision.StreamRevisionNoStream, events); err != nil {
+	options := esdb.AppendToStreamOptions{
+		ExpectedRevision: esdb.NoStream{},
+	}
+
+	if _, err := client.AppendToStream(context.Background(), streamID, options, events...); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func createSubscription(t *testing.T, streamID string, groupName string, client *esclient.Client) {
-	settings := persistent.DefaultSubscriptionSettings
-	settings.ReadBatchSize = 1
-
-	if err := client.CreatePersistentSubscription(context.Background(), persistent.SubscriptionStreamConfig{
-		StreamOption: persistent.StreamSettings{
-			StreamName: []byte(streamID),
-			Revision:   persistent.Revision_Start,
-		},
-		GroupName: groupName,
-		Settings:  settings,
+func createSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) {
+	if err := client.CreatePersistentSubscription(context.Background(), streamID, groupName, esdb.PersistentStreamSubscriptionOptions{
+		From: esdb.Start{},
 	}); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func connectToSubscription(t *testing.T, streamID string, groupName string, client *esclient.Client) persistent.SyncReadConnection {
-	readClient, err := client.ConnectToPersistentSubscription(
-		context.Background(), 1, groupName, []byte(streamID))
+func connectToSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) *esdb.PersistentSubscription {
+	subscription, err := client.ConnectToPersistentSubscription(
+
+		context.Background(), streamID, groupName, esdb.ConnectToPersistentSubscriptionOptions{BatchSize: 1})
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return readClient
+	return subscription
 }
 
-func ackMessages(t *testing.T, ackCount int, readClient persistent.SyncReadConnection) {
+func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
 	for i := 0; i < ackCount; i++ {
-		if readEvent, err := readClient.Read(); err != nil {
-			t.Fatal(err)
-		} else {
-			readClient.Ack(readEvent.Event.EventID)
-		}
+		event := subscription.Recv().EventAppeared
+		subscription.Ack(event)
 	}
 }
 
-func parkMessages(t *testing.T, parkCount int, readClient persistent.SyncReadConnection) {
+func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubscription) {
 
 	for i := 0; i < parkCount; i++ {
-		if readEvent, err := readClient.Read(); err != nil {
-			t.Fatal(err)
-		} else {
-			readClient.Nack("test", persistent.Nack_Park, readEvent.Event.EventID)
-		}
+		event := subscription.Recv().EventAppeared
+		subscription.Nack("reason", esdb.Nack_Park, event)
 	}
 }

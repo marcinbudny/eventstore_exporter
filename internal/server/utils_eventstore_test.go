@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	esclient "github.com/EventStore/EventStore-Client-Go/client"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	jp "github.com/buger/jsonparser"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
 )
@@ -113,15 +113,15 @@ func getEventStoreConnectionString() string {
 	return u.String()
 }
 
-func getEsClient(t *testing.T) *esclient.Client {
+func getEsClient(t *testing.T) *esdb.Client {
 	connectionString := getEventStoreConnectionString()
 	t.Logf("ES connection string: %s", connectionString)
 
-	config, err := esclient.ParseConnectionString(connectionString)
+	config, err := esdb.ParseConnectionString(connectionString)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := esclient.NewClient(config)
+	client, err := esdb.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}
