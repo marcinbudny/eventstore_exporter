@@ -17,7 +17,6 @@ type Collector struct {
 
 	up                 *prometheus.Desc
 	processCPU         *prometheus.Desc
-	processCPUScaled   *prometheus.Desc
 	processMemoryBytes *prometheus.Desc
 	diskIoReadBytes    *prometheus.Desc
 	diskIoWrittenBytes *prometheus.Desc
@@ -63,7 +62,6 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 
 		up:                 prometheus.NewDesc("eventstore_up", "Whether the EventStore scrape was successful", nil, nil),
 		processCPU:         prometheus.NewDesc("eventstore_process_cpu", "Process CPU usage, 0 - number of cores", nil, nil),
-		processCPUScaled:   prometheus.NewDesc("eventstore_process_cpu_scaled", "Process CPU usage scaled to number of cores, 0 - 1, 1 = full load on all cores (available only on versions < 20.6)", nil, nil),
 		processMemoryBytes: prometheus.NewDesc("eventstore_process_memory_bytes", "Process memory usage, as reported by EventStore", nil, nil),
 		diskIoReadBytes:    prometheus.NewDesc("eventstore_disk_io_read_bytes", "Total number of disk IO read bytes", nil, nil),
 		diskIoWrittenBytes: prometheus.NewDesc("eventstore_disk_io_written_bytes", "Total number of disk IO written bytes", nil, nil),
@@ -106,7 +104,6 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.up
 	ch <- c.processCPU
-	ch <- c.processCPUScaled
 	ch <- c.processMemoryBytes
 	ch <- c.diskIoReadBytes
 	ch <- c.diskIoWrittenBytes
@@ -159,10 +156,6 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, getProcessCPU(stats))
 
-		if stats.EsVersion.ReportsCpuScaled() {
-			ch <- prometheus.MustNewConstMetric(c.processCPUScaled, prometheus.GaugeValue, getProcessCPUScaled(stats))
-		}
-
 		ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, getProcessMemory(stats))
 		ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, getDiskIoReadBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, getDiskIoWrittenBytes(stats))
@@ -172,14 +165,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, getTCPReceivedBytes(stats))
 		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, getTCPConnections(stats))
 
-		if stats.EsVersion.UsesLeaderFollowerNomenclature() {
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
-		} else {
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsMaster, prometheus.GaugeValue, getIs("master", stats))
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberIsSlave, prometheus.GaugeValue, getIs("slave", stats))
-		}
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, getIs("leader", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, getIs("follower", stats))
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, getIs("readonlyreplica", stats))
 		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, getIs("clone", stats))
 
 		collectPerQueueMetric(stats, c.queueLength, getQueueLength, ch)
@@ -208,20 +196,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 func collectPerMemberMetric(stats *client.Stats, desc *prometheus.Desc, collectFunc func([]byte) (prometheus.ValueType, float64), ch chan<- prometheus.Metric) {
 
-	httpEndPointNomenclature := stats.EsVersion.UsesHttpEndPointNomenclature()
-
 	jp.ArrayEach(stats.GossipStats, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
-		ip := ""
-		port := int64(0)
-		if httpEndPointNomenclature {
-			ip, _ = jp.GetString(jsonValue, "httpEndPointIp")
-			port, _ = jp.GetInt(jsonValue, "httpEndPointPort")
-
-		} else {
-			ip, _ = jp.GetString(jsonValue, "externalHttpIp")
-			port, _ = jp.GetInt(jsonValue, "externalHttpPort")
-
-		}
+		ip, _ := jp.GetString(jsonValue, "httpEndPointIp")
+		port, _ := jp.GetInt(jsonValue, "httpEndPointPort")
 
 		memberName := fmt.Sprintf("%s:%d", ip, port)
 		valueType, value := collectFunc(jsonValue)
@@ -351,11 +328,6 @@ func getSubscriptionTotalInFlightMessages(subscription []byte) (prometheus.Value
 
 func getProcessCPU(stats *client.Stats) float64 {
 	value, _ := jp.GetFloat(stats.ServerStats, "proc", "cpu")
-	return value / 100.0
-}
-
-func getProcessCPUScaled(stats *client.Stats) float64 {
-	value, _ := jp.GetFloat(stats.ServerStats, "proc", "cpuScaled")
 	return value / 100.0
 }
 
