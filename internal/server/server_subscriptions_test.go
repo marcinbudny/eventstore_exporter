@@ -89,29 +89,27 @@ func Test_OldestParkedMessage_SubscriptionMetric(t *testing.T) {
 		metricByLabelValue("group_name", groupName), anyValue)
 }
 
-// TODO: possible es client bug preventing from properly reading replayed messages
+func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T) {
+	if !shouldRunSubscriptionTests(t) {
+		t.Log("Skipping subscriptions tests")
+		return
+	}
+	if !supportsParkedMessagesMetric(t) {
+		t.Log("Skipping parked message tests, the metric is not supported by current ES setup")
+		return
+	}
 
-// func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T) {
-// 	if !shouldRunSubscriptionTests(t) {
-// 		t.Log("Skipping subscriptions tests")
-// 		return
-// 	}
-// 	if !supportsParkedMessagesMetric(t) {
-// 		t.Log("Skipping parked message tests, the metric is not supported by current ES setup")
-// 		return
-// 	}
+	parkCount := 20
+	_, groupName := prepareSubscriptionEnvironmentWithReplayedMessages(t, parkCount)
 
-// 	parkCount := 20
-// 	_, groupName := prepareSubscriptionEnvironmentWithReplayedMessages(t, parkCount)
+	es := prepareExporterServer()
+	ts := httptest.NewServer(es.mux)
+	defer ts.Close()
 
-// 	es := prepareExporterServer()
-// 	ts := httptest.NewServer(es.mux)
-// 	defer ts.Close()
-
-// 	metrics := getMetrics(ts.URL, t)
-// 	assertMetric(t, metrics, "eventstore_subscription_parked_messages", "gauge",
-// 		metricByLabelValue("group_name", groupName), hasValue(float64(0)))
-// }
+	metrics := getMetrics(ts.URL, t)
+	assertMetric(t, metrics, "eventstore_subscription_parked_messages", "gauge",
+		metricByLabelValue("group_name", groupName), hasValue(float64(0)))
+}
 
 func shouldRunSubscriptionTests(t *testing.T) bool {
 	// do not run in cluster mode, as this causes issues when not connected to leader node
@@ -152,34 +150,32 @@ func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, 
 	return
 }
 
-// TODO: possible es client bug preventing from properly reading replayed messages
+func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount int) (streamID string, groupName string) {
+	streamID, groupName = newStreamAndGroup()
+	t.Logf("Stream: %s, group: %s", streamID, groupName)
 
-// func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount int) (streamID string, groupName string) {
-// 	streamID, groupName = newStreamAndGroup()
-// 	t.Logf("Stream: %s, group: %s", streamID, groupName)
+	client := getEsClient(t)
+	defer client.Close()
 
-// 	client := getEsClient(t)
-// 	defer client.Close()
+	writeTestEvents(t, parkCount, streamID, client)
 
-// 	writeTestEvents(t, parkCount, streamID, client)
+	createSubscription(t, streamID, groupName, client)
 
-// 	createSubscription(t, streamID, groupName, client)
+	readClient := connectToSubscription(t, streamID, groupName, client)
+	parkMessages(t, parkCount, readClient)
+	time.Sleep(time.Millisecond * 1000)
 
-// 	readClient := connectToSubscription(t, streamID, groupName, client)
-// 	parkMessages(t, parkCount, readClient)
-// 	time.Sleep(time.Millisecond * 1000)
+	replayParkedMessages(t, streamID, groupName)
+	time.Sleep(time.Millisecond * 1000)
 
-// 	replayParkedMessages(t, streamID, groupName)
-// 	time.Sleep(time.Millisecond * 1000)
+	ackMessages(t, parkCount, readClient)
 
-// 	ackMessages(t, parkCount, readClient)
+	// give internal stats time to be updated
+	time.Sleep(time.Millisecond * 1000)
+	client.Close()
 
-// 	// give internal stats time to be updated
-// 	time.Sleep(time.Millisecond * 1000)
-// 	client.Close()
-
-// 	return
-// }
+	return
+}
 
 func newStreamAndGroup() (streamID string, groupName string) {
 	streamUUID, _ := uuid.NewV4()
@@ -194,9 +190,7 @@ func newStreamAndGroup() (streamID string, groupName string) {
 func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
 	events := make([]esdb.EventData, 0)
 	for i := 0; i < eventCount; i++ {
-		//eventID, _ := uuid.NewV4()
 		events = append(events, esdb.EventData{
-			//EventID:     eventID,
 			EventType:   "TestEvent",
 			ContentType: esdb.BinaryContentType,
 			Data:        []byte{0xb, 0xe, 0xe, 0xf},

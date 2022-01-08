@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -69,24 +70,24 @@ func atomPubIsEnabled(t *testing.T) bool {
 	return true
 }
 
-// func replayParkedMessages(t *testing.T, streamID string, groupName string) {
-// 	httpClient := getEventstoreHttpClient()
+func replayParkedMessages(t *testing.T, streamID string, groupName string) {
+	httpClient := getEventstoreHttpClient()
 
-// 	eventStoreURL := getEventStoreURL()
+	eventStoreURL := getEventStoreURL()
 
-// 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/subscriptions/%s/%s/replayParked", eventStoreURL, streamID, groupName), nil)
-// 	req.SetBasicAuth("admin", "changeit")
-// 	req.Header.Add("Accept", "application/json")
-// 	res, errPost := httpClient.Do(req)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/subscriptions/%s/%s/replayParked", eventStoreURL, streamID, groupName), nil)
+	req.SetBasicAuth("admin", "changeit")
+	req.Header.Add("Accept", "application/json")
+	res, errPost := httpClient.Do(req)
 
-// 	if errPost != nil {
-// 		t.Fatal(errPost)
-// 	}
+	if errPost != nil {
+		t.Fatal(errPost)
+	}
 
-// 	if res.StatusCode != 200 {
-// 		t.Fatal("Unable to replay messages")
-// 	}
-// }
+	if res.StatusCode != 200 {
+		t.Fatal("Unable to replay messages")
+	}
+}
 
 func getEventStoreURL() string {
 	eventStoreURL := "http://localhost:2113"
