@@ -145,7 +145,6 @@ func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, 
 	parkMessages(t, parkCount, subscription)
 
 	time.Sleep(time.Millisecond * 2000)
-	client.Close()
 
 	return
 }
@@ -172,7 +171,6 @@ func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount 
 
 	// give internal stats time to be updated
 	time.Sleep(time.Millisecond * 1000)
-	client.Close()
 
 	return
 }
