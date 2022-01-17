@@ -37,13 +37,13 @@ func (esClient *EventStoreStatsClient) getClusterStats() <-chan getClusterStatsR
 	go func() {
 		if esClient.config.IsInClusterMode() {
 
-			infoJson, err := esClient.get("/info", false)
+			infoJson, err := esClient.esHttpGet("/info", false)
 			if err != nil {
 				stats <- getClusterStatsResult{err: err}
 				return
 			}
 
-			gossipJson, err := esClient.get("/gossip", false)
+			gossipJson, err := esClient.esHttpGet("/gossip", false)
 			if err != nil {
 				stats <- getClusterStatsResult{err: err}
 				return

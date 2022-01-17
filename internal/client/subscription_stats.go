@@ -1,12 +1,13 @@
 package client
 
 import (
+	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,24 +29,19 @@ type SubscriptionStats struct {
 	OldestParkedMessageAgeInSeconds float64
 }
 
-func (client *EventStoreStatsClient) getSubscriptionStats(esVersion EventStoreVersion) <-chan getSubscriptionStatsResult {
+func (client *EventStoreStatsClient) getSubscriptionStats() <-chan getSubscriptionStatsResult {
 	stats := make(chan (getSubscriptionStatsResult), 1)
 
 	go func() {
-		subscriptionsJson, err := client.get("/subscriptions", false)
+		subscriptionsJson, err := client.esHttpGet("/subscriptions", false)
 		if err != nil {
 			stats <- getSubscriptionStatsResult{err: err}
 		}
 
-		atomPubEnabled := true
-		if _, err := client.get("/streams/$all/head/backward/1", false); err != nil {
-			atomPubEnabled = false
-		}
-
-		subscriptions := getSubscriptions(subscriptionsJson, esVersion)
+		subscriptions := getSubscriptions(subscriptionsJson)
 
 		if client.config.EnableParkedMessagesStats {
-			client.addParkedMessagesStats(subscriptions, esVersion, atomPubEnabled)
+			client.addParkedMessagesStats(subscriptions)
 		} else {
 			markParkedMessageStatsAsUnavailable(subscriptions)
 		}
@@ -66,7 +62,7 @@ func markParkedMessageStatsAsUnavailable(subscriptions []SubscriptionStats) {
 	}
 }
 
-func getSubscriptions(subscriptionsJson []byte, esVersion EventStoreVersion) []SubscriptionStats {
+func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 	subscriptions := []SubscriptionStats{}
 
 	jp.ArrayEach(subscriptionsJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
@@ -84,51 +80,13 @@ func getSubscriptions(subscriptionsJson []byte, esVersion EventStoreVersion) []S
 	return subscriptions
 }
 
-func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []SubscriptionStats, esVersion EventStoreVersion, atomPubEnabled bool) {
-
-	if atomPubEnabled {
-		log.Debug("Detected Atom Pub to be available, getting parked message stats via Atom Pub")
-
-		client.addParkedMessagesStatsViaAtomPub(subscriptions)
-
-	} else if esVersion.ReportsParkedMessageNumber() {
-		log.Debug("Detected Atom Pub to be unavailable, getting limited paked message stats from group info endpoint")
-
-		client.addParkedMessagesStatsViaGroupInfo(subscriptions)
-
-	} else {
-		log.Error("Atom Pub is disabled and ES version is < 21.2, there is no way to retrieve parmed message stats")
+func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []SubscriptionStats) {
+	grpcClient, err := client.getGrpcClient()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Error when creating grpc client")
 	}
-}
-
-func (client *EventStoreStatsClient) addParkedMessagesStatsViaGroupInfo(subscriptions []SubscriptionStats) {
-	var wg sync.WaitGroup
-
-	for i := range subscriptions {
-		wg.Add(1)
-
-		go func(subscription *SubscriptionStats) {
-			defer wg.Done()
-
-			groupInfoURL := fmt.Sprintf("/subscriptions/%s/%s/info", subscription.EventStreamID, subscription.GroupName)
-			if groupInfoJson, err := client.get(groupInfoURL, false); err == nil {
-				subscription.TotalNumberOfParkedMessages = getFloat(groupInfoJson, "parkedMessageCount")
-				subscription.OldestParkedMessageAgeInSeconds = -1
-			} else {
-				log.WithFields(log.Fields{
-					"eventStreamId": subscription.EventStreamID,
-					"groupName":     subscription.GroupName,
-					"error":         err,
-				}).Error("Error when getting subscription group info")
-
-			}
-		}(&subscriptions[i])
-	}
-
-	wg.Wait()
-}
-
-func (client *EventStoreStatsClient) addParkedMessagesStatsViaAtomPub(subscriptions []SubscriptionStats) {
 
 	var wg sync.WaitGroup
 
@@ -138,24 +96,26 @@ func (client *EventStoreStatsClient) addParkedMessagesStatsViaAtomPub(subscripti
 		go func(subscription *SubscriptionStats) {
 			defer wg.Done()
 
-			lastEventNumber, err := client.getParkedMessagesLastEventNumber(subscription.EventStreamID, subscription.GroupName)
+			subscription.OldestParkedMessageAgeInSeconds = -1
 
-			if err != nil || lastEventNumber == 0 {
+			parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(grpcClient, subscription.EventStreamID, subscription.GroupName, client.config.Timeout)
+
+			if err != nil || !parkedMessageFound {
 				return
 			}
 
-			truncateBeforeValue, err := client.getParkedMessagesTruncateBeforeValue(subscription.EventStreamID, subscription.GroupName)
+			truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(grpcClient, subscription.EventStreamID, subscription.GroupName, client.config.Timeout)
 
 			if err != nil {
 				return
 			}
 
-			totalNumberOfParkedMessages := lastEventNumber - truncateBeforeValue
+			totalNumberOfParkedMessages := lastEventNumber + 1 - truncateBeforeValue // +1 becaues ids start from 0
 
 			var oldestParkedMessageAgeInSeconds float64 = 0
 			if totalNumberOfParkedMessages > 0 {
-				oldestMessageID := lastEventNumber - totalNumberOfParkedMessages
-				oldestParkedMessageAgeInSeconds, _ = client.getOldestParkedMessageTimeInSeconds(subscription.EventStreamID, subscription.GroupName, oldestMessageID)
+				oldestMessagePosition := lastEventNumber + 1 - totalNumberOfParkedMessages
+				oldestParkedMessageAgeInSeconds, _ = getOldestParkedMessageAgeInSeconds(grpcClient, subscription.EventStreamID, subscription.GroupName, oldestMessagePosition, client.config.Timeout)
 			}
 
 			subscription.TotalNumberOfParkedMessages = float64(totalNumberOfParkedMessages)
@@ -167,101 +127,73 @@ func (client *EventStoreStatsClient) addParkedMessagesStatsViaAtomPub(subscripti
 	wg.Wait()
 }
 
-func (client *EventStoreStatsClient) getOldestParkedMessageTimeInSeconds(eventStreamID string, groupName string, oldestMessageID int64) (float64, error) {
-	getOldestMessageURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/%s/forward/1", eventStreamID, groupName, strconv.FormatInt(oldestMessageID, 10))
-	oldestMessageJson, err := client.get(getOldestMessageURL, false)
+func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID string, groupName string, oldestMessagePosition uint64, timeout time.Duration) (float64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	if err != nil {
-		log.WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-			"error":         err,
-		}).Error("Error while getting oldest parked message.")
-		return 0, err
+	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)}, 1)
+	if err == nil {
+		event, err := read.Recv()
+		if err == nil {
+			created := event.Event.CreatedDate
+			loc, _ := time.LoadLocation("UTC")
+			timeNow := time.Now().In(loc)
+			age := float64(timeNow.Sub(created) / time.Second)
+
+			return age, nil
+		}
 	}
 
-	oldestMessageUpdatedDateResult := ""
-	jp.ArrayEach(oldestMessageJson, func(value []byte, dataType jp.ValueType, offset int, err error) {
-		oldestMessageUpdatedDateResult = getString(value, "updated")
-	}, "entries")
+	log.WithFields(log.Fields{
+		"eventStreamId": eventStreamID,
+		"groupName":     groupName,
+		"error":         err,
+	}).Error("Error when getting parked messages stream.")
 
-	loc, _ := time.LoadLocation("UTC")
-	timeNow := time.Now().In(loc)
-	oldestMessageUpdatedDate, err := time.Parse(time.RFC3339Nano, oldestMessageUpdatedDateResult)
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-			"timeString":    oldestMessageUpdatedDateResult,
-			"error":         err,
-		}).Error("Cannot parse update time on the oldest parked message.")
-		return 0, err
-	}
-
-	timeInSeconds := float64(timeNow.Sub(oldestMessageUpdatedDate) / time.Second)
-
-	return timeInSeconds, nil
+	return 0, err
 }
 
-func (client *EventStoreStatsClient) getParkedMessagesLastEventNumber(eventStreamID string, groupName string) (int64, error) {
-	parkedMessagesURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/head/backward/1", eventStreamID, groupName)
-	parkedMessagesJson, err := client.get(parkedMessagesURL, true)
+func getParkedMessagesLastEventNumber(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (bool, uint64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	if err != nil {
-		log.WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-			"error":         err,
-		}).Error("Error when getting parked messages stream.")
-		return 0, err
+	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, 1)
+	if err == nil {
+		event, err := read.Recv()
+		if err == nil {
+			return true, event.Event.EventNumber, nil
+		}
 	}
 
-	if parkedMessagesJson == nil {
+	log.WithFields(log.Fields{
+		"eventStreamId": eventStreamID,
+		"groupName":     groupName,
+		"error":         err,
+	}).Error("Error when getting parked messages stream.")
+
+	return false, 0, err
+}
+
+func getParkedMessagesTruncateBeforeValue(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (uint64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if meta, err := grpcClient.GetStreamMetadata(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{}); err == nil {
+		return *meta.TruncateBefore(), nil
+	} else if strings.Contains(err.Error(), "not found") {
 		return 0, nil
-	}
-
-	eTagString := getString(parkedMessagesJson, "eTag")
-
-	lastEventNumber, err := strconv.ParseInt(strings.Split(eTagString, ";")[0], 10, 64)
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-			"eTagString":    eTagString,
-			"error":         err,
-		}).Error("Cannot parse eTag on parked messages stream.")
-		return 0, err
-	}
-
-	lastEventNumber++ // +1 because Ids start from 0
-
-	return lastEventNumber, nil
-}
-
-func (client *EventStoreStatsClient) getParkedMessagesTruncateBeforeValue(eventStreamID string, groupName string) (int64, error) {
-	metadataURL := fmt.Sprintf("/streams/$persistentsubscription-%s::%s-parked/metadata", eventStreamID, groupName)
-	metadataJson, err := client.get(metadataURL, false)
-
-	if err != nil {
+	} else {
 		log.WithFields(log.Fields{
 			"eventStreamId": eventStreamID,
 			"groupName":     groupName,
 			"error":         err,
 		}).Error("Error when getting parked message stream metadata")
+
 		return 0, err
+
 	}
+}
 
-	truncateBeforeValue, err := jp.GetInt(metadataJson, "$tb")
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-		}).Debug("Parked messages have not been replayed yet, as $tb value does not exist in the metadata. Defaulting to 0.")
-		return 0, nil
-	}
-
-	return truncateBeforeValue, nil
+func parkedStreamID(eventStreamID string, groupName string) string {
+	return fmt.Sprintf("$persistentsubscription-%s::%s-parked", eventStreamID, groupName)
 }

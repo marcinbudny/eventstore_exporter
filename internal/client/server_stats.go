@@ -45,7 +45,7 @@ type DriveStats struct {
 func (esClient *EventStoreStatsClient) getServerStats() <-chan getServerStatsResult {
 	stats := make(chan getServerStatsResult, 1)
 	go func() {
-		if serverJson, err := esClient.get("/stats", false); err == nil {
+		if serverJson, err := esClient.esHttpGet("/stats", false); err == nil {
 			stats <- getServerStatsResult{
 				process: &ProcessStats{
 					Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,

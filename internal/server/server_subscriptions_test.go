@@ -46,10 +46,6 @@ func Test_ParkedMessages_SubscriptionMetric(t *testing.T) {
 		t.Log("Skipping subscriptions tests")
 		return
 	}
-	if !supportsParkedMessagesMetric(t) {
-		t.Log("Skipping parked message tests, the metric is not supported by current ES setup")
-		return
-	}
 
 	totalCount := 60
 	ackCount := 10
@@ -68,10 +64,6 @@ func Test_ParkedMessages_SubscriptionMetric(t *testing.T) {
 func Test_OldestParkedMessage_SubscriptionMetric(t *testing.T) {
 	if !shouldRunSubscriptionTests(t) {
 		t.Log("Skipping subscriptions tests")
-		return
-	}
-	if !supportsOldestParkedMessagesMetric(t) {
-		t.Log("Skipping oldest parked message tests, the metric is not supported by current ES setup")
 		return
 	}
 
@@ -94,10 +86,6 @@ func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T)
 		t.Log("Skipping subscriptions tests")
 		return
 	}
-	if !supportsParkedMessagesMetric(t) {
-		t.Log("Skipping parked message tests, the metric is not supported by current ES setup")
-		return
-	}
 
 	parkCount := 20
 	_, groupName := prepareSubscriptionEnvironmentWithReplayedMessages(t, parkCount)
@@ -114,18 +102,6 @@ func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T)
 func shouldRunSubscriptionTests(t *testing.T) bool {
 	// do not run in cluster mode, as this causes issues when not connected to leader node
 	return os.Getenv("TEST_CLUSTER_MODE") != "cluster"
-}
-
-func supportsParkedMessagesMetric(t *testing.T) bool {
-	if getEsVersion(t).ReportsParkedMessageNumber() || atomPubIsEnabled(t) {
-		return true
-	}
-
-	return false
-}
-
-func supportsOldestParkedMessagesMetric(t *testing.T) bool {
-	return atomPubIsEnabled(t)
 }
 
 func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, parkCount int) (streamID string, groupName string) {

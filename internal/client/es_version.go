@@ -15,7 +15,7 @@ func (client *EventStoreStatsClient) getEsVersion() <-chan getEsVersionResult {
 	result := make(chan getEsVersionResult, 1)
 
 	go func() {
-		if infoJson, err := client.get("/info", false); err == nil {
+		if infoJson, err := client.esHttpGet("/info", false); err == nil {
 			result <- getEsVersionResult{
 				esVersion: EventStoreVersion(getString(infoJson, "esVersion")),
 			}
@@ -25,10 +25,6 @@ func (client *EventStoreStatsClient) getEsVersion() <-chan getEsVersionResult {
 	}()
 
 	return result
-}
-
-func (esVersion EventStoreVersion) ReportsParkedMessageNumber() bool {
-	return esVersion.IsAtLeastVersion("21.2.0.0")
 }
 
 func (esVersion EventStoreVersion) IsAtLeastVersion(minVersion string) bool {

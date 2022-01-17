@@ -3,7 +3,10 @@ package client
 import (
 	"crypto/tls"
 	"net/http"
+	"net/url"
+	"time"
 
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
@@ -45,22 +48,43 @@ func New(config *config.Config) *EventStoreStatsClient {
 	return esClient
 }
 
-func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
-
-	esVersionResult := <-client.getEsVersion()
-	if esVersionResult.err != nil {
-		return nil, esVersionResult.err
+func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
+	url, err := url.Parse(client.config.EventStoreURL)
+	if err != nil {
+		return nil, err
 	}
 
+	esConfig := &esdb.Configuration{
+		Address:                     url.Host,
+		DisableTLS:                  url.Scheme != "https",
+		SkipCertificateVerification: client.config.InsecureSkipVerify,
+		DiscoveryInterval:           100,
+		GossipTimeout:               5,
+		MaxDiscoverAttempts:         10,
+		KeepAliveInterval:           10 * time.Second,
+		KeepAliveTimeout:            10 * time.Second,
+	}
+
+	if client.config.EventStoreUser != "" && client.config.EventStorePassword != "" {
+		esConfig.Username = client.config.EventStoreUser
+		esConfig.Password = client.config.EventStorePassword
+	}
+
+	return esdb.NewClient(esConfig)
+}
+
+func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
+	esVersionChan := client.getEsVersion()
 	serverStatsChan := client.getServerStats()
 	projectionStatsChan := client.getProjectionStats()
-	subscriptionStatsChan := client.getSubscriptionStats(esVersionResult.esVersion)
+	subscriptionStatsChan := client.getSubscriptionStats()
 
 	var clusterStatsChan <-chan getClusterStatsResult
 	if client.config.IsInClusterMode() {
 		clusterStatsChan = client.getClusterStats()
 	}
 
+	esVersionResult := <-esVersionChan
 	serverStatsResult := <-serverStatsChan
 	projectionStatsResult := <-projectionStatsChan
 	subscriptionsStatsResult := <-subscriptionStatsChan
@@ -70,6 +94,9 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 		clusterStatsResult = <-clusterStatsChan
 	}
 
+	if esVersionResult.err != nil {
+		return nil, esVersionResult.err
+	}
 	if serverStatsResult.err != nil {
 		return nil, serverStatsResult.err
 	}

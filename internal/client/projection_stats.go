@@ -20,7 +20,7 @@ func (client *EventStoreStatsClient) getProjectionStats() <-chan getProjectionSt
 	stats := make(chan getProjectionStatsResult, 1)
 
 	go func() {
-		if projectionsJson, err := client.get("/projections/all-non-transient", true); err == nil {
+		if projectionsJson, err := client.esHttpGet("/projections/all-non-transient", true); err == nil {
 			stats <- getProjectionStatsResult{
 				projections: getProjectionStats(projectionsJson),
 			}

@@ -29,7 +29,7 @@ func getInt(json []byte, keys ...string) int64 {
 	return value
 }
 
-func (client *EventStoreStatsClient) get(path string, acceptNotFound bool) (result []byte, err error) {
+func (client *EventStoreStatsClient) esHttpGet(path string, acceptNotFound bool) (result []byte, err error) {
 	url := client.config.EventStoreURL + path
 
 	log.WithField("url", url).Debug("GET request to EventStore")
