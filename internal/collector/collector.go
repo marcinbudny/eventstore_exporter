@@ -46,6 +46,8 @@ type Collector struct {
 	subscriptionTotalInFlightMessages       *prometheus.Desc
 	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
 	subscriptionOldestParkedMessage         *prometheus.Desc
+
+	streamLastPosition *prometheus.Desc
 }
 
 func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *Collector {
@@ -88,6 +90,8 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
+
+		streamLastPosition: prometheus.NewDesc("eventstore_stream_last_position", "Last event number in a stream or last commit position in case of $all stream", []string{"event_stream_id"}, nil),
 	}
 }
 
@@ -180,6 +184,10 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalInFlightMessages, prometheus.GaugeValue, subscription.TotalInFlightMessages, subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalNumberOfParkedMessages, prometheus.GaugeValue, subscription.TotalNumberOfParkedMessages, subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionOldestParkedMessage, prometheus.GaugeValue, subscription.OldestParkedMessageAgeInSeconds, subscription.EventStreamID, subscription.GroupName)
+		}
+
+		for _, stream := range stats.Streams {
+			ch <- prometheus.MustNewConstMetric(c.streamLastPosition, prometheus.GaugeValue, float64(stream.LastEventNumber), stream.EventStreamID)
 		}
 
 		if c.config.IsInClusterMode() {

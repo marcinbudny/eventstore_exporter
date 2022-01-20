@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
 	jp "github.com/buger/jsonparser"
+	"github.com/gofrs/uuid"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
 )
 
@@ -128,4 +130,32 @@ func getEsClient(t *testing.T) *esdb.Client {
 	}
 
 	return client
+}
+
+func newStreamAndGroup() (streamID string, groupName string) {
+	return newUUID(), newUUID()
+}
+
+func newUUID() string {
+	uuid, _ := uuid.NewV4()
+	return uuid.String()
+}
+
+func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
+	events := make([]esdb.EventData, 0)
+	for i := 0; i < eventCount; i++ {
+		events = append(events, esdb.EventData{
+			EventType:   "TestEvent",
+			ContentType: esdb.BinaryContentType,
+			Data:        []byte{0xb, 0xe, 0xe, 0xf},
+		})
+	}
+
+	options := esdb.AppendToStreamOptions{
+		ExpectedRevision: esdb.Any{},
+	}
+
+	if _, err := client.AppendToStream(context.Background(), streamID, options, events...); err != nil {
+		t.Fatal(err)
+	}
 }

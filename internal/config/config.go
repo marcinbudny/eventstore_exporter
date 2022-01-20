@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/namsral/flag"
@@ -19,9 +20,13 @@ type Config struct {
 	EventStorePassword        string
 	ClusterMode               string
 	EnableParkedMessagesStats bool
+	Streams                   []string
+	StreamsSeparator          string
 }
 
-func createFlagSet(config *Config) *flag.FlagSet {
+func Load(args []string, suppressOutput bool) (*Config, error) {
+	config := &Config{}
+
 	fs := flag.NewFlagSet("flagset", flag.ContinueOnError)
 	fs.String(flag.DefaultConfigFlagname, "", "Path to config file")
 	fs.StringVar(&config.EventStoreURL, "eventstore-url", "http://localhost:2113", "EventStore URL")
@@ -33,19 +38,16 @@ func createFlagSet(config *Config) *flag.FlagSet {
 	fs.StringVar(&config.ClusterMode, "cluster-mode", "cluster", "Cluster mode: `cluster` or `single`. In single mode, calls to cluster status endpoints are skipped")
 	fs.BoolVar(&config.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
 	fs.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
-
-	return fs
-}
-
-func Load(args []string, suppressOutput bool) (*Config, error) {
-	config := &Config{}
-	fs := createFlagSet(config)
+	streamsString := fs.String("streams", "", "List of streams to get metrics for")
+	fs.StringVar(&config.StreamsSeparator, "streams-separator", ",", "Separator for streams list")
 
 	if suppressOutput {
 		fs.Usage = func() {}
 	}
 
 	if err := fs.Parse(args); err == nil {
+		config.Streams = parseStreamList(streamsString, config.StreamsSeparator)
+
 		if validationErr := config.validate(); validationErr == nil {
 			return config, nil
 		} else {
@@ -65,9 +67,21 @@ func (config *Config) validate() error {
 		return errors.New("EventStore user and password should both be specified, or should both be empty")
 	}
 
+	if len(config.StreamsSeparator) != 1 {
+		return fmt.Errorf("streams separator should be a single character, got %s", config.StreamsSeparator)
+	}
+
 	return nil
 }
 
 func (config *Config) IsInClusterMode() bool {
 	return config.ClusterMode == "cluster"
+}
+
+func parseStreamList(streamsString *string, streamsSeparator string) []string {
+	if streamsString == nil || *streamsString == "" {
+		return []string{}
+	}
+
+	return strings.Split(*streamsString, streamsSeparator)
 }

@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofrs/uuid"
-
 	"github.com/EventStore/EventStore-Client-Go/esdb"
 )
 
@@ -149,35 +147,6 @@ func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount 
 	time.Sleep(time.Millisecond * 1000)
 
 	return
-}
-
-func newStreamAndGroup() (streamID string, groupName string) {
-	streamUUID, _ := uuid.NewV4()
-	streamID = streamUUID.String()
-
-	groupUUID, _ := uuid.NewV4()
-	groupName = groupUUID.String()
-
-	return
-}
-
-func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
-	events := make([]esdb.EventData, 0)
-	for i := 0; i < eventCount; i++ {
-		events = append(events, esdb.EventData{
-			EventType:   "TestEvent",
-			ContentType: esdb.BinaryContentType,
-			Data:        []byte{0xb, 0xe, 0xe, 0xf},
-		})
-	}
-
-	options := esdb.AppendToStreamOptions{
-		ExpectedRevision: esdb.NoStream{},
-	}
-
-	if _, err := client.AppendToStream(context.Background(), streamID, options, events...); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func createSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) {
