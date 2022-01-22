@@ -20,12 +20,12 @@ type getSubscriptionStatsResult struct {
 type SubscriptionStats struct {
 	EventStreamID                   string
 	GroupName                       string
-	TotalItemsProcessed             float64
-	ConnectionCount                 float64
-	LastKnownEventNumber            float64
-	LastProcessedEventNumber        float64
-	TotalInFlightMessages           float64
-	TotalNumberOfParkedMessages     float64
+	TotalItemsProcessed             int64
+	ConnectionCount                 int64
+	LastKnownEventNumber            int64
+	LastProcessedEventNumber        int64
+	TotalInFlightMessages           int64
+	TotalNumberOfParkedMessages     int64
 	OldestParkedMessageAgeInSeconds float64
 }
 
@@ -69,11 +69,11 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 		subscriptions = append(subscriptions, SubscriptionStats{
 			EventStreamID:            getString(jsonValue, "eventStreamId"),
 			GroupName:                getString(jsonValue, "groupName"),
-			TotalItemsProcessed:      getFloat(jsonValue, "totalItemsProcessed"),
-			ConnectionCount:          getFloat(jsonValue, "connectionCount"),
-			LastKnownEventNumber:     getFloat(jsonValue, "lastKnownEventNumber"),
-			LastProcessedEventNumber: getFloat(jsonValue, "lastProcessedEventNumber"),
-			TotalInFlightMessages:    getFloat(jsonValue, "totalInFlightMessages"),
+			TotalItemsProcessed:      getInt(jsonValue, "totalItemsProcessed"),
+			ConnectionCount:          getInt(jsonValue, "connectionCount"),
+			LastKnownEventNumber:     getInt(jsonValue, "lastKnownEventNumber"),
+			LastProcessedEventNumber: getInt(jsonValue, "lastProcessedEventNumber"),
+			TotalInFlightMessages:    getInt(jsonValue, "totalInFlightMessages"),
 		})
 	})
 
@@ -119,7 +119,7 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 				oldestParkedMessageAgeInSeconds, _ = getOldestParkedMessageAgeInSeconds(grpcClient, subscription.EventStreamID, subscription.GroupName, oldestMessagePosition, client.config.Timeout)
 			}
 
-			subscription.TotalNumberOfParkedMessages = float64(totalNumberOfParkedMessages)
+			subscription.TotalNumberOfParkedMessages = int64(totalNumberOfParkedMessages)
 			subscription.OldestParkedMessageAgeInSeconds = oldestParkedMessageAgeInSeconds
 
 		}(&subscriptions[i])
