@@ -14,32 +14,32 @@ type getServerStatsResult struct {
 
 type ProcessStats struct {
 	Cpu         float64
-	MemoryBytes float64
+	MemoryBytes int64
 }
 
 type DiskIoStats struct {
-	ReadBytes    float64
-	WrittenBytes float64
-	ReadOps      float64
-	WriteOps     float64
+	ReadBytes    int64
+	WrittenBytes int64
+	ReadOps      int64
+	WriteOps     int64
 }
 
 type TcpStats struct {
-	SentBytes     float64
-	ReceivedBytes float64
-	Connections   float64
+	SentBytes     int64
+	ReceivedBytes int64
+	Connections   int64
 }
 
 type QueueStats struct {
 	Name           string
-	Length         float64
-	ItemsProcessed float64
+	Length         int64
+	ItemsProcessed int64
 }
 
 type DriveStats struct {
 	Name           string
-	TotalBytes     float64
-	AvailableBytes float64
+	TotalBytes     int64
+	AvailableBytes int64
 }
 
 func (esClient *EventStoreStatsClient) getServerStats() <-chan getServerStatsResult {
@@ -49,18 +49,18 @@ func (esClient *EventStoreStatsClient) getServerStats() <-chan getServerStatsRes
 			stats <- getServerStatsResult{
 				process: &ProcessStats{
 					Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,
-					MemoryBytes: getFloat(serverJson, "proc", "mem"),
+					MemoryBytes: getInt(serverJson, "proc", "mem"),
 				},
 				diskIo: &DiskIoStats{
-					ReadBytes:    getFloat(serverJson, "proc", "diskIo", "readBytes"),
-					WrittenBytes: getFloat(serverJson, "proc", "diskIo", "writtenBytes"),
-					ReadOps:      getFloat(serverJson, "proc", "diskIo", "readOps"),
-					WriteOps:     getFloat(serverJson, "proc", "diskIo", "writeOps"),
+					ReadBytes:    getInt(serverJson, "proc", "diskIo", "readBytes"),
+					WrittenBytes: getInt(serverJson, "proc", "diskIo", "writtenBytes"),
+					ReadOps:      getInt(serverJson, "proc", "diskIo", "readOps"),
+					WriteOps:     getInt(serverJson, "proc", "diskIo", "writeOps"),
 				},
 				tcpStats: &TcpStats{
-					SentBytes:     getFloat(serverJson, "proc", "tcp", "sentBytesTotal"),
-					ReceivedBytes: getFloat(serverJson, "proc", "tcp", "receivedBytesTotal"),
-					Connections:   getFloat(serverJson, "proc", "tcp", "connections"),
+					SentBytes:     getInt(serverJson, "proc", "tcp", "sentBytesTotal"),
+					ReceivedBytes: getInt(serverJson, "proc", "tcp", "receivedBytesTotal"),
+					Connections:   getInt(serverJson, "proc", "tcp", "connections"),
 				},
 				queues: getQueueStats(serverJson),
 				drives: getDriveStats(serverJson),
@@ -79,8 +79,8 @@ func getQueueStats(serverStats []byte) []QueueStats {
 	jp.ObjectEach(serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		queues = append(queues, QueueStats{
 			Name:           string(key),
-			Length:         getFloat(jsonValue, "length"),
-			ItemsProcessed: getFloat(jsonValue, "totalItemsProcessed"),
+			Length:         getInt(jsonValue, "length"),
+			ItemsProcessed: getInt(jsonValue, "totalItemsProcessed"),
 		})
 
 		return nil
@@ -95,8 +95,8 @@ func getDriveStats(serverStats []byte) []DriveStats {
 	jp.ObjectEach(serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
 		drives = append(drives, DriveStats{
 			Name:           string(key),
-			TotalBytes:     getFloat(jsonValue, "totalBytes"),
-			AvailableBytes: getFloat(jsonValue, "availableBytes"),
+			TotalBytes:     getInt(jsonValue, "totalBytes"),
+			AvailableBytes: getInt(jsonValue, "availableBytes"),
 		})
 
 		return nil

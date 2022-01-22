@@ -25,6 +25,7 @@ type Stats struct {
 	Drives        []DriveStats
 	Projections   []ProjectionStats
 	Subscriptions []SubscriptionStats
+	Streams       []StreamStats
 }
 
 func New(config *config.Config) *EventStoreStatsClient {
@@ -78,6 +79,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	serverStatsChan := client.getServerStats()
 	projectionStatsChan := client.getProjectionStats()
 	subscriptionStatsChan := client.getSubscriptionStats()
+	streamStatsChan := client.getStreamStats()
 
 	var clusterStatsChan <-chan getClusterStatsResult
 	if client.config.IsInClusterMode() {
@@ -88,6 +90,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	serverStatsResult := <-serverStatsChan
 	projectionStatsResult := <-projectionStatsChan
 	subscriptionsStatsResult := <-subscriptionStatsChan
+	streamStatsResult := <-streamStatsChan
 
 	var clusterStatsResult getClusterStatsResult
 	if client.config.IsInClusterMode() {
@@ -106,6 +109,9 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	if subscriptionsStatsResult.err != nil {
 		return nil, subscriptionsStatsResult.err
 	}
+	if streamStatsResult.err != nil {
+		return nil, streamStatsResult.err
+	}
 	if client.config.IsInClusterMode() && clusterStatsResult.err != nil {
 		return nil, clusterStatsResult.err
 	}
@@ -119,6 +125,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 		Drives:        serverStatsResult.drives,
 		Projections:   projectionStatsResult.projections,
 		Subscriptions: subscriptionsStatsResult.subscriptions,
+		Streams:       streamStatsResult.streams,
 	}
 
 	if client.config.IsInClusterMode() {

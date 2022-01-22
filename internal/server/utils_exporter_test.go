@@ -10,14 +10,16 @@ import (
 )
 
 func prepareExporterServer() *ExporterServer {
+	return prepareExporterServerWithConfig(func(_ *config.Config) {})
+}
+
+func prepareExporterServerWithConfig(updateConfig func(*config.Config)) *ExporterServer {
 	eventStoreURL := getEventStoreURL()
 
 	clusterMode := "single"
 	if os.Getenv("TEST_CLUSTER_MODE") != "" {
 		clusterMode = os.Getenv("TEST_CLUSTER_MODE")
 	}
-
-	enableParkedMessagesStats := true
 
 	config := &config.Config{
 		EventStoreURL:             eventStoreURL,
@@ -26,7 +28,11 @@ func prepareExporterServer() *ExporterServer {
 		ClusterMode:               clusterMode,
 		InsecureSkipVerify:        true,
 		Timeout:                   time.Second * 10,
-		EnableParkedMessagesStats: enableParkedMessagesStats,
+		EnableParkedMessagesStats: true,
+	}
+
+	if updateConfig != nil {
+		updateConfig(config)
 	}
 
 	client := client.New(config)

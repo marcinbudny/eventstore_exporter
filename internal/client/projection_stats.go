@@ -13,7 +13,7 @@ type ProjectionStats struct {
 	Name                        string
 	Running                     bool
 	Progress                    float64
-	EventsProcessedAfterRestart float64
+	EventsProcessedAfterRestart int64
 }
 
 func (client *EventStoreStatsClient) getProjectionStats() <-chan getProjectionStatsResult {
@@ -41,7 +41,7 @@ func getProjectionStats(projectionsJson []byte) []ProjectionStats {
 			Name:                        getString(jsonValue, "effectiveName"),
 			Running:                     getString(jsonValue, "status") == "Running",
 			Progress:                    getFloat(jsonValue, "progress") / 100.0, // scale to 0-1
-			EventsProcessedAfterRestart: getFloat(jsonValue, "eventsProcessedAfterRestart"),
+			EventsProcessedAfterRestart: getInt(jsonValue, "eventsProcessedAfterRestart"),
 		})
 
 	}, "projections")

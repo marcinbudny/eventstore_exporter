@@ -30,6 +30,8 @@ func TestLoadConfig(t *testing.T) {
 				EventStorePassword:        "",
 				ClusterMode:               "cluster",
 				EnableParkedMessagesStats: false,
+				Streams:                   []string{},
+				StreamsSeparator:          ",",
 			},
 		},
 		{
@@ -44,6 +46,8 @@ func TestLoadConfig(t *testing.T) {
 				"-eventstore-user=user",
 				"-cluster-mode=single",
 				"-enable-parked-messages-stats=true",
+				"-streams=$all;my-stream;my-other-stream",
+				"-streams-separator=;",
 			},
 			expectedConfig: Config{
 				Timeout:                   time.Duration(20 * time.Second),
@@ -55,6 +59,8 @@ func TestLoadConfig(t *testing.T) {
 				EventStorePassword:        "password",
 				ClusterMode:               "single",
 				EnableParkedMessagesStats: true,
+				Streams:                   []string{"$all", "my-stream", "my-other-stream"},
+				StreamsSeparator:          ";",
 			},
 		},
 		{
@@ -75,6 +81,13 @@ func TestLoadConfig(t *testing.T) {
 			name: "error on invalid cluster mode",
 			args: []string{
 				"-cluster-mode=test",
+			},
+			errorExpected: true,
+		},
+		{
+			name: "error on streams separator",
+			args: []string{
+				"-streams-separator=test",
 			},
 			errorExpected: true,
 		},
@@ -108,6 +121,8 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("EVENTSTORE_PASSWORD", "password")
 	os.Setenv("CLUSTER_MODE", "single")
 	os.Setenv("ENABLE_PARKED_MESSAGES_STATS", "true")
+	os.Setenv("STREAMS", "$all;my-stream;my-other-stream")
+	os.Setenv("STREAMS_SEPARATOR", ";")
 
 	expectedConfig := Config{
 		Timeout:                   time.Duration(20 * time.Second),
@@ -119,6 +134,8 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		EventStorePassword:        "password",
 		ClusterMode:               "single",
 		EnableParkedMessagesStats: true,
+		Streams:                   []string{"$all", "my-stream", "my-other-stream"},
+		StreamsSeparator:          ";",
 	}
 
 	if cfg, err := Load([]string{}, true); err == nil {
@@ -145,6 +162,8 @@ func TestLoadConfigFromFile(t *testing.T) {
 		EventStorePassword:        "password",
 		ClusterMode:               "single",
 		EnableParkedMessagesStats: true,
+		Streams:                   []string{"$all", "my-test-stream", "my-other-stream"},
+		StreamsSeparator:          "|",
 	}
 
 	if cfg, err := Load(args, true); err == nil {
@@ -166,4 +185,6 @@ func clearEnvironment() {
 	os.Unsetenv("EVENTSTORE_PASSWORD")
 	os.Unsetenv("CLUSTER_MODE")
 	os.Unsetenv("ENABLE_PARKED_MESSAGES_STATS")
+	os.Unsetenv("STREAMS")
+	os.Unsetenv("STREAMS_SEPARATOR")
 }

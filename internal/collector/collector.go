@@ -46,6 +46,9 @@ type Collector struct {
 	subscriptionTotalInFlightMessages       *prometheus.Desc
 	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
 	subscriptionOldestParkedMessage         *prometheus.Desc
+
+	streamLastCommitPosition *prometheus.Desc
+	streamLastEventNumber    *prometheus.Desc
 }
 
 func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *Collector {
@@ -88,6 +91,9 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
+
+		streamLastEventNumber:    prometheus.NewDesc("eventstore_stream_last_event_number", "Last event number in a stream (streams other than $all)", []string{"event_stream_id"}, nil),
+		streamLastCommitPosition: prometheus.NewDesc("eventstore_stream_last_commit_position", "Last commit position in a stream ($all stream only)", []string{"event_stream_id"}, nil),
 	}
 }
 
@@ -143,23 +149,23 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, stats.Process.Cpu)
 
-		ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, stats.Process.MemoryBytes)
-		ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, stats.DiskIo.ReadBytes)
-		ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, stats.DiskIo.WrittenBytes)
-		ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, stats.DiskIo.ReadOps)
-		ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, stats.DiskIo.WriteOps)
-		ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, stats.Tcp.SentBytes)
-		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, stats.Tcp.ReceivedBytes)
-		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, stats.Tcp.Connections)
+		ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, float64(stats.Process.MemoryBytes))
+		ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, float64(stats.DiskIo.ReadBytes))
+		ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, float64(stats.DiskIo.WrittenBytes))
+		ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, float64(stats.DiskIo.ReadOps))
+		ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, float64(stats.DiskIo.WriteOps))
+		ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, float64(stats.Tcp.SentBytes))
+		ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, float64(stats.Tcp.ReceivedBytes))
+		ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, float64(stats.Tcp.Connections))
 
 		for _, queue := range stats.Queues {
-			ch <- prometheus.MustNewConstMetric(c.queueLength, prometheus.GaugeValue, queue.Length, queue.Name)
-			ch <- prometheus.MustNewConstMetric(c.queueItemsProcessed, prometheus.CounterValue, queue.ItemsProcessed, queue.Name)
+			ch <- prometheus.MustNewConstMetric(c.queueLength, prometheus.GaugeValue, float64(queue.Length), queue.Name)
+			ch <- prometheus.MustNewConstMetric(c.queueItemsProcessed, prometheus.CounterValue, float64(queue.ItemsProcessed), queue.Name)
 		}
 
 		for _, drive := range stats.Drives {
-			ch <- prometheus.MustNewConstMetric(c.driveTotalBytes, prometheus.GaugeValue, drive.TotalBytes, drive.Name)
-			ch <- prometheus.MustNewConstMetric(c.driveAvailableBytes, prometheus.GaugeValue, drive.AvailableBytes, drive.Name)
+			ch <- prometheus.MustNewConstMetric(c.driveTotalBytes, prometheus.GaugeValue, float64(drive.TotalBytes), drive.Name)
+			ch <- prometheus.MustNewConstMetric(c.driveAvailableBytes, prometheus.GaugeValue, float64(drive.AvailableBytes), drive.Name)
 		}
 
 		for _, projection := range stats.Projections {
@@ -169,17 +175,25 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			}
 			ch <- prometheus.MustNewConstMetric(c.projectionRunning, prometheus.GaugeValue, running, projection.Name)
 			ch <- prometheus.MustNewConstMetric(c.projectionProgress, prometheus.GaugeValue, projection.Progress, projection.Name)
-			ch <- prometheus.MustNewConstMetric(c.projectionEventsProcessedAfterRestart, prometheus.CounterValue, projection.EventsProcessedAfterRestart, projection.Name)
+			ch <- prometheus.MustNewConstMetric(c.projectionEventsProcessedAfterRestart, prometheus.CounterValue, float64(projection.EventsProcessedAfterRestart), projection.Name)
 		}
 
 		for _, subscription := range stats.Subscriptions {
-			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalItemsProcessed, prometheus.CounterValue, subscription.TotalItemsProcessed, subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastProcessedEventNumber, prometheus.GaugeValue, subscription.LastProcessedEventNumber, subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventNumber, prometheus.GaugeValue, subscription.LastKnownEventNumber, subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionConnectionCount, prometheus.GaugeValue, subscription.ConnectionCount, subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalInFlightMessages, prometheus.GaugeValue, subscription.TotalInFlightMessages, subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalNumberOfParkedMessages, prometheus.GaugeValue, subscription.TotalNumberOfParkedMessages, subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalItemsProcessed, prometheus.CounterValue, float64(subscription.TotalItemsProcessed), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionLastProcessedEventNumber, prometheus.GaugeValue, float64(subscription.LastProcessedEventNumber), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventNumber, prometheus.GaugeValue, float64(subscription.LastKnownEventNumber), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionConnectionCount, prometheus.GaugeValue, float64(subscription.ConnectionCount), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalInFlightMessages, prometheus.GaugeValue, float64(subscription.TotalInFlightMessages), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalNumberOfParkedMessages, prometheus.GaugeValue, float64(subscription.TotalNumberOfParkedMessages), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionOldestParkedMessage, prometheus.GaugeValue, subscription.OldestParkedMessageAgeInSeconds, subscription.EventStreamID, subscription.GroupName)
+		}
+
+		for _, stream := range stats.Streams {
+			if stream.EventStreamID == "$all" {
+				ch <- prometheus.MustNewConstMetric(c.streamLastCommitPosition, prometheus.GaugeValue, float64(stream.LastCommitPosition), stream.EventStreamID)
+			} else {
+				ch <- prometheus.MustNewConstMetric(c.streamLastEventNumber, prometheus.GaugeValue, float64(stream.LastEventNumber), stream.EventStreamID)
+			}
 		}
 
 		if c.config.IsInClusterMode() {
