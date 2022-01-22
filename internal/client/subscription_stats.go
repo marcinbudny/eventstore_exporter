@@ -87,6 +87,7 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 			"error": err,
 		}).Error("Error when creating grpc client")
 	}
+	defer grpcClient.Close()
 
 	var wg sync.WaitGroup
 

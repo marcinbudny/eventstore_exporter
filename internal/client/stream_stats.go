@@ -10,8 +10,8 @@ import (
 )
 
 type StreamStats struct {
-	EventStreamID   string
-	LastEventNumber uint64
+	EventStreamID string
+	LastPosition  uint64
 }
 
 type getStreamStatsResult struct {
@@ -23,43 +23,55 @@ func (client *EventStoreStatsClient) getStreamStats() <-chan getStreamStatsResul
 	resultChan := make(chan getStreamStatsResult, 1)
 
 	go func() {
-		streamStats := make(chan StreamStats, len(client.config.Streams))
-		grpcClient, err := client.getGrpcClient()
-		if err != nil {
+		if streamStats, err := getStreamStatsFromEachStream(client); err == nil {
+			resultChan <- getStreamStatsResult{streams: streamStats}
+		} else {
 			resultChan <- getStreamStatsResult{err: err}
-			return
 		}
-
-		var wg sync.WaitGroup
-
-		for i, stream := range client.config.Streams {
-			wg.Add(1)
-
-			go func(i int, stream string) {
-				defer wg.Done()
-
-				if stats, getErr := getStreamStats(grpcClient, stream, client.config.Timeout); getErr == nil {
-					streamStats <- stats
-				}
-
-			}(i, stream)
-		}
-
-		wg.Wait()
-		close(streamStats)
-
-		s := make([]StreamStats, 0)
-		for i := range streamStats {
-			s = append(s, i)
-		}
-
-		resultChan <- getStreamStatsResult{streams: s}
 	}()
 
 	return resultChan
 }
 
-func getStreamStats(grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
+func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats, error) {
+	grpcClient, err := client.getGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+	defer grpcClient.Close()
+
+	streamStats := make(chan StreamStats, len(client.config.Streams))
+	var wg sync.WaitGroup
+
+	for _, stream := range client.config.Streams {
+		wg.Add(1)
+
+		go func(stream string) {
+			defer wg.Done()
+
+			if stats, getErr := getSingleStreamStats(grpcClient, stream, client.config.Timeout); getErr == nil {
+				streamStats <- stats
+			}
+
+		}(stream)
+	}
+
+	wg.Wait()
+	close(streamStats)
+
+	return toSlice(streamStats), nil
+}
+
+func toSlice(streamStats <-chan StreamStats) []StreamStats {
+	streamStatsSlice := make([]StreamStats, 0)
+	for s := range streamStats {
+		streamStatsSlice = append(streamStatsSlice, s)
+	}
+
+	return streamStatsSlice
+}
+
+func getSingleStreamStats(grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
 	if stream == "$all" {
 		return getAllStreamStats(grpcClient, timeout)
 	}
@@ -75,7 +87,7 @@ func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamSt
 	if err == nil {
 		event, err := read.Recv()
 		if err == nil {
-			return StreamStats{EventStreamID: "$all", LastEventNumber: event.Event.Position.Commit}, nil
+			return StreamStats{EventStreamID: "$all", LastPosition: event.Event.Position.Commit}, nil
 		}
 	}
 
@@ -94,7 +106,7 @@ func getRegularStreamStats(grpcClient *esdb.Client, stream string, timeout time.
 	if err == nil {
 		event, err := read.Recv()
 		if err == nil {
-			return StreamStats{EventStreamID: stream, LastEventNumber: event.Event.EventNumber}, nil
+			return StreamStats{EventStreamID: stream, LastPosition: event.Event.EventNumber}, nil
 		}
 	}
 

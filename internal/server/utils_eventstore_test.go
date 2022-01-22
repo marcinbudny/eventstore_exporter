@@ -4,16 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
-	jp "github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/marcinbudny/eventstore_exporter/internal/client"
 )
 
 func getEventstoreHttpClient() *http.Client {
@@ -23,53 +20,6 @@ func getEventstoreHttpClient() *http.Client {
 	return &http.Client{
 		Transport: tr,
 	}
-}
-
-func getEsVersion(t *testing.T) client.EventStoreVersion {
-
-	httpClient := getEventstoreHttpClient()
-	eventStoreURL := getEventStoreURL()
-
-	req, _ := http.NewRequest("GET", eventStoreURL+"/info", nil)
-	req.SetBasicAuth("admin", "changeit")
-	req.Header.Add("Accept", "application/json")
-	res, errGet := httpClient.Do(req)
-
-	if errGet != nil {
-		t.Fatal(errGet)
-	}
-	info, errRead := io.ReadAll(res.Body)
-	res.Body.Close()
-	if errRead != nil {
-		t.Fatal(errRead)
-	}
-
-	value, _ := jp.GetString(info, "esVersion")
-	if value == "" {
-		value = "0.0.0.0"
-	}
-	return client.EventStoreVersion(value)
-}
-
-func atomPubIsEnabled(t *testing.T) bool {
-	httpClient := getEventstoreHttpClient()
-
-	eventStoreURL := getEventStoreURL()
-
-	req, _ := http.NewRequest("GET", eventStoreURL+"/streams/$all/head/backward/1", nil)
-	req.SetBasicAuth("admin", "changeit")
-	req.Header.Add("Accept", "application/json")
-	res, errGet := httpClient.Do(req)
-
-	if errGet != nil {
-		t.Fatal(errGet)
-	}
-
-	if res.StatusCode != 200 {
-		return false
-	}
-
-	return true
 }
 
 func replayParkedMessages(t *testing.T, streamID string, groupName string) {

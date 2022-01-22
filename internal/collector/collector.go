@@ -187,7 +187,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		for _, stream := range stats.Streams {
-			ch <- prometheus.MustNewConstMetric(c.streamLastPosition, prometheus.GaugeValue, float64(stream.LastEventNumber), stream.EventStreamID)
+			ch <- prometheus.MustNewConstMetric(c.streamLastPosition, prometheus.GaugeValue, float64(stream.LastPosition), stream.EventStreamID)
 		}
 
 		if c.config.IsInClusterMode() {
