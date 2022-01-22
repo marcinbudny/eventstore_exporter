@@ -26,7 +26,6 @@ jobs:
         env:
           EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
           EVENTSTORE_INSECURE: 'True'
-          EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
           EVENTSTORE_RUN_PROJECTIONS: All
         # override eventstore healthcheck that does not work properly
         options: >-
