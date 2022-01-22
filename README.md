@@ -74,6 +74,8 @@ The exporter can be configured with command line arguments, environment variable
 | --verbose                      | VERBOSE                      | false                 | Enable verbose logging                                                                                                                                                                                                                                                                                                                                                    |
 | --insecure-skip-verify         | INSECURE_SKIP_VERIFY         | false                 | Skip TLS certificate verification for EventStore HTTP client                                                                                                                                                                                                                                                                                                              |
 | --enable-parked-messages-stats | ENABLE_PARKED_MESSAGES_STATS | false                 | Enable parked messages stats scraping. **Note:** for ES 20.10+ you need to enable Atom Pub over HTTP in EventStoreDB to get subscriptions stats. For ES 21.2+, number of parked messages can be extracted without enabling AtomPub, but not the age of the oldest message.                                                                                                |
+| --streams                      | STREAMS                      | (empty)               | List of streams to get stats for e.g. `$all,my-stream`. Currently last event position / last event number is the only supported metric.                                                                                                                                                                                                                                   |
+| --streams-separator            | STREAMS_SEPARATOR            | `,`                   | Single character separator for streams list provided in `--streams`. Change from default if your stream names contain commas.                                                                                                                                                                                                                                             |
 
 Sample configuration file
 
@@ -103,87 +105,119 @@ Let me know if there is a metric you would like to be added.
 # HELP eventstore_cluster_member_alive If 1, cluster member is alive, as seen from current cluster member
 # TYPE eventstore_cluster_member_alive gauge
 eventstore_cluster_member_alive{member="172.16.1.11:2113"} 1
+
 # HELP eventstore_cluster_member_is_clone If 1, current cluster member is a clone
 # TYPE eventstore_cluster_member_is_clone gauge
 eventstore_cluster_member_is_clone 1
+
 # HELP eventstore_cluster_member_is_follower If 1, current cluster member is a follower
 # TYPE eventstore_cluster_member_is_follower gauge
 eventstore_cluster_member_is_follower 0
+
 # HELP eventstore_cluster_member_is_leader If 1, current cluster member is the leader
 # TYPE eventstore_cluster_member_is_leader gauge
 eventstore_cluster_member_is_leader 0
+
 # HELP eventstore_cluster_member_is_readonly_replica If 1, current cluster member is a readonly replica
 # TYPE eventstore_cluster_member_is_readonly_replica gauge
 eventstore_cluster_member_is_readonly_replica 0
+
 # HELP eventstore_disk_io_read_bytes Total number of disk IO read bytes
 # TYPE eventstore_disk_io_read_bytes gauge
 eventstore_disk_io_read_bytes 20480
+
 # HELP eventstore_disk_io_read_ops Total number of disk IO read operations
 # TYPE eventstore_disk_io_read_ops gauge
 eventstore_disk_io_read_ops 2814
+
 # HELP eventstore_disk_io_write_ops Total number of disk IO write operations
 # TYPE eventstore_disk_io_write_ops gauge
 eventstore_disk_io_write_ops 4421
+
 # HELP eventstore_disk_io_written_bytes Total number of disk IO written bytes
 # TYPE eventstore_disk_io_written_bytes gauge
 eventstore_disk_io_written_bytes 2.6918912e+08
+
 # HELP eventstore_drive_available_bytes Drive available bytes
 # TYPE eventstore_drive_available_bytes gauge
 eventstore_drive_available_bytes{drive="/var/lib/eventstore"} 5.6815230976e+10
+
 # HELP eventstore_drive_total_bytes Drive total size in bytes
 # TYPE eventstore_drive_total_bytes gauge
 eventstore_drive_total_bytes{drive="/var/lib/eventstore"} 6.2725787648e+10
+
 # HELP eventstore_process_cpu Process CPU usage, 0 - number of cores
 # TYPE eventstore_process_cpu gauge
 eventstore_process_cpu 0.08
+
 # HELP eventstore_process_memory_bytes Process memory usage, as reported by EventStore
 # TYPE eventstore_process_memory_bytes gauge
 eventstore_process_memory_bytes 1.19267328e+08
+
 # HELP eventstore_projection_events_processed_after_restart_total Projection event processed count after restart
 # TYPE eventstore_projection_events_processed_after_restart_total counter
 eventstore_projection_events_processed_after_restart_total{projection="$by_event_type"} 0
+
 # HELP eventstore_projection_progress Projection progress 0 - 1, where 1 = projection progress at 100%
 # TYPE eventstore_projection_progress gauge
 eventstore_projection_progress{projection="$by_event_type"} 1
+
 # HELP eventstore_projection_running If 1, projection is in 'Running' state
 # TYPE eventstore_projection_running gauge
 eventstore_projection_running{projection="$by_event_type"} 1
+
 # HELP eventstore_queue_items_processed_total Total number items processed by queue
 # TYPE eventstore_queue_items_processed_total counter
 eventstore_queue_items_processed_total{queue="index Committer"} 54
+
 # HELP eventstore_queue_length Queue length
 # TYPE eventstore_queue_length gauge
 eventstore_queue_length{queue="index Committer"} 0
+
+# HELP eventstore_stream_last_position Last event number in a stream or last commit position in case of $all stream
+# TYPE eventstore_stream_last_position gauge
+eventstore_stream_last_event_position{event_stream_id="$all"} 65476
+
 # HELP eventstore_subscription_connections Number of connections to subscription
 # TYPE eventstore_subscription_connections gauge
 eventstore_subscription_connections{event_stream_id="test-stream",group_name="group1"} 0
+
 # HELP eventstore_subscription_items_processed_total Total items processed by subscription
 # TYPE eventstore_subscription_items_processed_total counter
 eventstore_subscription_items_processed_total{event_stream_id="test-stream",group_name="group1"} 24
+
 # HELP eventstore_subscription_last_known_event_number Last known event number in subscription
 # TYPE eventstore_subscription_last_known_event_number gauge
 eventstore_subscription_last_known_event_number{event_stream_id="test-stream",group_name="group1"} 23
+
 # HELP eventstore_subscription_last_processed_event_number Last event number processed by subscription
 # TYPE eventstore_subscription_last_processed_event_number gauge
 eventstore_subscription_last_processed_event_number{event_stream_id="test-stream",group_name="group1"} 19
+
 # HELP eventstore_subscription_messages_in_flight Number of messages in flight for subscription
 # TYPE eventstore_subscription_messages_in_flight gauge
 eventstore_subscription_messages_in_flight{event_stream_id="test-stream",group_name="group1"} 0
+
 # HELP eventstore_subscription_oldest_parked_message_age_seconds Oldest parked message age for subscription in seconds
 # TYPE eventstore_subscription_oldest_parked_message_age_seconds gauge
 eventstore_subscription_oldest_parked_message_age_seconds{event_stream_id="test-stream",group_name="group1"} 33
+
 # HELP eventstore_subscription_parked_messages Number of parked messages for subscription
 # TYPE eventstore_subscription_parked_messages gauge
 eventstore_subscription_parked_messages{event_stream_id="test-stream",group_name="group1"} 1
+
 # HELP eventstore_tcp_connections Current number of TCP connections
 # TYPE eventstore_tcp_connections gauge
 eventstore_tcp_connections 1
+
 # HELP eventstore_tcp_received_bytes TCP received bytes
 # TYPE eventstore_tcp_received_bytes gauge
 eventstore_tcp_received_bytes 17237
+
 # HELP eventstore_tcp_sent_bytes TCP sent bytes
 # TYPE eventstore_tcp_sent_bytes gauge
 eventstore_tcp_sent_bytes 3423
+
 # HELP eventstore_up Whether the EventStore scrape was successful
 # TYPE eventstore_up gauge
 eventstore_up 1
