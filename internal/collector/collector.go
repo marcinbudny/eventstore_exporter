@@ -47,7 +47,8 @@ type Collector struct {
 	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
 	subscriptionOldestParkedMessage         *prometheus.Desc
 
-	streamLastPosition *prometheus.Desc
+	streamLastCommitPosition *prometheus.Desc
+	streamLastEventNumber    *prometheus.Desc
 }
 
 func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *Collector {
@@ -91,7 +92,8 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
 
-		streamLastPosition: prometheus.NewDesc("eventstore_stream_last_event_position", "Last event number in a stream or last commit position in case of $all stream", []string{"event_stream_id"}, nil),
+		streamLastEventNumber:    prometheus.NewDesc("eventstore_stream_last_event_number", "Last event number in a stream (streams other than $all)", []string{"event_stream_id"}, nil),
+		streamLastCommitPosition: prometheus.NewDesc("eventstore_stream_last_commit_position", "Last commit position in a stream ($all stream only)", []string{"event_stream_id"}, nil),
 	}
 }
 
@@ -187,7 +189,11 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		for _, stream := range stats.Streams {
-			ch <- prometheus.MustNewConstMetric(c.streamLastPosition, prometheus.GaugeValue, float64(stream.LastPosition), stream.EventStreamID)
+			if stream.EventStreamID == "$all" {
+				ch <- prometheus.MustNewConstMetric(c.streamLastCommitPosition, prometheus.GaugeValue, float64(stream.LastCommitPosition), stream.EventStreamID)
+			} else {
+				ch <- prometheus.MustNewConstMetric(c.streamLastEventNumber, prometheus.GaugeValue, float64(stream.LastEventNumber), stream.EventStreamID)
+			}
 		}
 
 		if c.config.IsInClusterMode() {

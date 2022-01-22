@@ -10,8 +10,9 @@ import (
 )
 
 type StreamStats struct {
-	EventStreamID string
-	LastPosition  uint64
+	EventStreamID      string
+	LastCommitPosition int64
+	LastEventNumber    int64
 }
 
 type getStreamStatsResult struct {
@@ -87,7 +88,11 @@ func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamSt
 	if err == nil {
 		event, err := read.Recv()
 		if err == nil {
-			return StreamStats{EventStreamID: "$all", LastPosition: event.Event.Position.Commit}, nil
+			return StreamStats{
+				EventStreamID:      "$all",
+				LastCommitPosition: int64(event.Event.Position.Commit),
+				LastEventNumber:    -1,
+			}, nil
 		}
 	}
 
@@ -106,7 +111,11 @@ func getRegularStreamStats(grpcClient *esdb.Client, stream string, timeout time.
 	if err == nil {
 		event, err := read.Recv()
 		if err == nil {
-			return StreamStats{EventStreamID: stream, LastPosition: event.Event.EventNumber}, nil
+			return StreamStats{
+				EventStreamID:      stream,
+				LastCommitPosition: -1,
+				LastEventNumber:    int64(event.Event.EventNumber),
+			}, nil
 		}
 	}
 
