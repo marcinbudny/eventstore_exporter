@@ -91,7 +91,7 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
 		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
 
-		streamLastPosition: prometheus.NewDesc("eventstore_stream_last_position", "Last event number in a stream or last commit position in case of $all stream", []string{"event_stream_id"}, nil),
+		streamLastPosition: prometheus.NewDesc("eventstore_stream_last_event_position", "Last event number in a stream or last commit position in case of $all stream", []string{"event_stream_id"}, nil),
 	}
 }
 
