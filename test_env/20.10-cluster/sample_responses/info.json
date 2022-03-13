@@ -1,9 +1,0 @@
-{
-    "esVersion": "0.0.0",
-    "state": "leader", // follower, readonlyreplica, clone
-    "features": {
-      "projections": true,
-      "userManagement": true,
-      "atomPub": true
-    }
-  }

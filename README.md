@@ -194,13 +194,21 @@ eventstore_subscription_items_processed_total{event_stream_id="test-stream",grou
 # TYPE eventstore_subscription_last_known_event_number gauge
 eventstore_subscription_last_known_event_number{event_stream_id="test-stream",group_name="group1"} 23
 
-# HELP eventstore_subscription_last_processed_event_number Last event number processed by subscription
-# TYPE eventstore_subscription_last_processed_event_number gauge
-eventstore_subscription_last_processed_event_number{event_stream_id="test-stream",group_name="group1"} 19
+# HELP eventstore_subscription_last_checkpointed_event_commit_position Last checkpointed event's commit position ($all stream only)
+# TYPE eventstore_subscription_last_checkpointed_event_commit_position gauge
+eventstore_subscription_last_checkpointed_event_commit_position{event_stream_id="$all",group_name="group1"} 43950
 
-# HELP eventstore_subscription_messages_in_flight Number of messages in flight for subscription
-# TYPE eventstore_subscription_messages_in_flight gauge
-eventstore_subscription_messages_in_flight{event_stream_id="test-stream",group_name="group1"} 0
+# HELP eventstore_subscription_last_known_event_commit_position Last known event's commit position ($all stream only)
+# TYPE eventstore_subscription_last_known_event_commit_position gauge
+eventstore_subscription_last_known_event_commit_position{event_stream_id="$all",group_name="group1"} 47509
+
+# HELP eventstore_subscription_last_known_event_number Last known event number in subscription (streams other than $all)
+# TYPE eventstore_subscription_last_known_event_number gauge
+eventstore_subscription_last_known_event_number{event_stream_id="test-stream",group_name="group1"} 251
+
+# HELP eventstore_subscription_last_processed_event_number Last event number processed by subscription (streams other than $all)
+# TYPE eventstore_subscription_last_processed_event_number gauge
+eventstore_subscription_last_processed_event_number{event_stream_id="test-stream",group_name="group1"} 95
 
 # HELP eventstore_subscription_oldest_parked_message_age_seconds Oldest parked message age for subscription in seconds
 # TYPE eventstore_subscription_oldest_parked_message_age_seconds gauge

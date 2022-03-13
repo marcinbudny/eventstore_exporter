@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,8 @@ type SubscriptionStats struct {
 	ConnectionCount                 int64
 	LastKnownEventNumber            int64
 	LastProcessedEventNumber        int64
+	LastCheckpointedEventPosition   int64
+	LastKnownEventPosition          int64
 	TotalInFlightMessages           int64
 	TotalNumberOfParkedMessages     int64
 	OldestParkedMessageAgeInSeconds float64
@@ -66,7 +69,7 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 	subscriptions := []SubscriptionStats{}
 
 	jp.ArrayEach(subscriptionsJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
-		subscriptions = append(subscriptions, SubscriptionStats{
+		stats := SubscriptionStats{
 			EventStreamID:            getString(jsonValue, "eventStreamId"),
 			GroupName:                getString(jsonValue, "groupName"),
 			TotalItemsProcessed:      getInt(jsonValue, "totalItemsProcessed"),
@@ -74,7 +77,35 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 			LastKnownEventNumber:     getInt(jsonValue, "lastKnownEventNumber"),
 			LastProcessedEventNumber: getInt(jsonValue, "lastProcessedEventNumber"),
 			TotalInFlightMessages:    getInt(jsonValue, "totalInFlightMessages"),
-		})
+		}
+
+		if stats.EventStreamID == "$all" {
+			stats.LastKnownEventNumber = -1
+			stats.LastProcessedEventNumber = -1
+
+			if lastCheckpointedEventPosition, err := parseEventPosition(getString(jsonValue, "lastCheckpointedEventPosition")); err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Errorf("Error while parsing last checkpointed event position of $all stream subscription group %s", stats.GroupName)
+			} else {
+				stats.LastCheckpointedEventPosition = lastCheckpointedEventPosition
+			}
+
+			if lastKnownEventPosition, err := parseEventPosition(getString(jsonValue, "lastKnownEventPosition")); err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Errorf("Error while parsing last known even position of $all stream subscription group %s", stats.GroupName)
+			} else {
+				stats.LastKnownEventPosition = lastKnownEventPosition
+			}
+		} else {
+			stats.LastKnownEventNumber = getInt(jsonValue, "lastKnownEventNumber")
+			stats.LastProcessedEventNumber = getInt(jsonValue, "lastProcessedEventNumber")
+			stats.LastCheckpointedEventPosition = -1
+			stats.LastKnownEventPosition = -1
+		}
+
+		subscriptions = append(subscriptions, stats)
 	})
 
 	return subscriptions
@@ -197,4 +228,23 @@ func getParkedMessagesTruncateBeforeValue(grpcClient *esdb.Client, eventStreamID
 
 func parkedStreamID(eventStreamID string, groupName string) string {
 	return fmt.Sprintf("$persistentsubscription-%s::%s-parked", eventStreamID, groupName)
+}
+
+// extracts commit position from strings like "C:1234/P:5678"
+func parseEventPosition(position string) (int64, error) {
+	if position == "" {
+		return -1, fmt.Errorf("empty position")
+	}
+
+	parts := strings.Split(position, "/")
+	if len(parts) != 2 {
+		return -1, fmt.Errorf("invalid event position: %s", position)
+	}
+
+	commitPosition, err := strconv.ParseInt(parts[0][2:], 10, 64)
+	if err != nil {
+		return -1, fmt.Errorf("invalid commit position in event position: %s", position)
+	}
+
+	return commitPosition, nil
 }

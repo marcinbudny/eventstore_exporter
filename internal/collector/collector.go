@@ -39,13 +39,15 @@ type Collector struct {
 	clusterMemberIsFollower        *prometheus.Desc
 	clusterMemberIsReadonlyReplica *prometheus.Desc
 
-	subscriptionTotalItemsProcessed         *prometheus.Desc
-	subscriptionLastProcessedEventNumber    *prometheus.Desc
-	subscriptionLastKnownEventNumber        *prometheus.Desc
-	subscriptionConnectionCount             *prometheus.Desc
-	subscriptionTotalInFlightMessages       *prometheus.Desc
-	subscriptionTotalNumberOfParkedMessages *prometheus.Desc
-	subscriptionOldestParkedMessage         *prometheus.Desc
+	subscriptionTotalItemsProcessed                 *prometheus.Desc
+	subscriptionLastProcessedEventNumber            *prometheus.Desc
+	subscriptionLastKnownEventNumber                *prometheus.Desc
+	subscriptionLastCheckpointedEventCommitPosition *prometheus.Desc
+	subscriptionLastKnownEventCommitPosition        *prometheus.Desc
+	subscriptionConnectionCount                     *prometheus.Desc
+	subscriptionTotalInFlightMessages               *prometheus.Desc
+	subscriptionTotalNumberOfParkedMessages         *prometheus.Desc
+	subscriptionOldestParkedMessage                 *prometheus.Desc
 
 	streamLastCommitPosition *prometheus.Desc
 	streamLastEventNumber    *prometheus.Desc
@@ -84,13 +86,15 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		clusterMemberIsFollower:        prometheus.NewDesc("eventstore_cluster_member_is_follower", "If 1, current cluster member is a follower", nil, nil),
 		clusterMemberIsReadonlyReplica: prometheus.NewDesc("eventstore_cluster_member_is_readonly_replica", "If 1, current cluster member is a readonly replica", nil, nil),
 
-		subscriptionTotalItemsProcessed:         prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastProcessedEventNumber:    prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionLastKnownEventNumber:        prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionConnectionCount:             prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionTotalInFlightMessages:       prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionTotalNumberOfParkedMessages: prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
-		subscriptionOldestParkedMessage:         prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalItemsProcessed:                 prometheus.NewDesc("eventstore_subscription_items_processed_total", "Total items processed by subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastProcessedEventNumber:            prometheus.NewDesc("eventstore_subscription_last_processed_event_number", "Last event number processed by subscription (streams other than $all)", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastKnownEventNumber:                prometheus.NewDesc("eventstore_subscription_last_known_event_number", "Last known event number in subscription (streams other than $all)", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastCheckpointedEventCommitPosition: prometheus.NewDesc("eventstore_subscription_last_checkpointed_event_commit_position", "Last checkpointed event's commit position ($all stream only)", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionLastKnownEventCommitPosition:        prometheus.NewDesc("eventstore_subscription_last_known_event_commit_position", "Last known event's commit position ($all stream only)", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionConnectionCount:                     prometheus.NewDesc("eventstore_subscription_connections", "Number of connections to subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalInFlightMessages:               prometheus.NewDesc("eventstore_subscription_messages_in_flight", "Number of messages in flight for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionTotalNumberOfParkedMessages:         prometheus.NewDesc("eventstore_subscription_parked_messages", "Number of parked messages for subscription", []string{"event_stream_id", "group_name"}, nil),
+		subscriptionOldestParkedMessage:                 prometheus.NewDesc("eventstore_subscription_oldest_parked_message_age_seconds", "Oldest parked message age for subscription in seconds", []string{"event_stream_id", "group_name"}, nil),
 
 		streamLastEventNumber:    prometheus.NewDesc("eventstore_stream_last_event_number", "Last event number in a stream (streams other than $all)", []string{"event_stream_id"}, nil),
 		streamLastCommitPosition: prometheus.NewDesc("eventstore_stream_last_commit_position", "Last commit position in a stream ($all stream only)", []string{"event_stream_id"}, nil),
@@ -131,6 +135,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.subscriptionTotalItemsProcessed
 	ch <- c.subscriptionLastProcessedEventNumber
 	ch <- c.subscriptionLastKnownEventNumber
+	ch <- c.subscriptionLastCheckpointedEventCommitPosition
+	ch <- c.subscriptionLastKnownEventCommitPosition
 	ch <- c.subscriptionConnectionCount
 	ch <- c.subscriptionTotalInFlightMessages
 	ch <- c.subscriptionTotalNumberOfParkedMessages
@@ -180,12 +186,19 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		for _, subscription := range stats.Subscriptions {
 			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalItemsProcessed, prometheus.CounterValue, float64(subscription.TotalItemsProcessed), subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastProcessedEventNumber, prometheus.GaugeValue, float64(subscription.LastProcessedEventNumber), subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventNumber, prometheus.GaugeValue, float64(subscription.LastKnownEventNumber), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionConnectionCount, prometheus.GaugeValue, float64(subscription.ConnectionCount), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalInFlightMessages, prometheus.GaugeValue, float64(subscription.TotalInFlightMessages), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionTotalNumberOfParkedMessages, prometheus.GaugeValue, float64(subscription.TotalNumberOfParkedMessages), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionOldestParkedMessage, prometheus.GaugeValue, subscription.OldestParkedMessageAgeInSeconds, subscription.EventStreamID, subscription.GroupName)
+
+			if subscription.EventStreamID == "$all" {
+				ch <- prometheus.MustNewConstMetric(c.subscriptionLastCheckpointedEventCommitPosition, prometheus.GaugeValue, float64(subscription.LastCheckpointedEventPosition), subscription.EventStreamID, subscription.GroupName)
+				ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventCommitPosition, prometheus.GaugeValue, float64(subscription.LastKnownEventPosition), subscription.EventStreamID, subscription.GroupName)
+			} else {
+				ch <- prometheus.MustNewConstMetric(c.subscriptionLastProcessedEventNumber, prometheus.GaugeValue, float64(subscription.LastProcessedEventNumber), subscription.EventStreamID, subscription.GroupName)
+				ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventNumber, prometheus.GaugeValue, float64(subscription.LastKnownEventNumber), subscription.EventStreamID, subscription.GroupName)
+			}
+
 		}
 
 		for _, stream := range stats.Streams {
