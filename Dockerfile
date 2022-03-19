@@ -1,4 +1,4 @@
-FROM golang:1.17.6-alpine as build
+FROM golang:1.17-alpine as build
 
 WORKDIR /go/src/github.com/marcinbudny/eventstore_exporter
 COPY . ./

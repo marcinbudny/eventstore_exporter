@@ -31,7 +31,7 @@ func Test_Basic_SubscriptionMetrics(t *testing.T) {
 	assertMetric(t, metrics, "eventstore_subscription_messages_in_flight", "gauge",
 		metricByLabelValue("group_name", groupName), anyValue)
 	assertMetric(t, metrics, "eventstore_subscription_last_known_event_number", "gauge",
-		metricByLabelValue("group_name", groupName), anyValue)
+		metricByLabelValue("group_name", groupName), nonZeroValue)
 	assertMetric(t, metrics, "eventstore_subscription_items_processed_total", "counter",
 		metricByLabelValue("group_name", groupName), hasValue(float64(ackCount+parkCount+1))) // account for one buffered event
 	assertMetric(t, metrics, "eventstore_subscription_last_processed_event_number", "gauge",
@@ -167,19 +167,4 @@ func connectToSubscription(t *testing.T, streamID string, groupName string, clie
 	}
 
 	return subscription
-}
-
-func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
-	for i := 0; i < ackCount; i++ {
-		event := subscription.Recv().EventAppeared
-		subscription.Ack(event)
-	}
-}
-
-func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubscription) {
-
-	for i := 0; i < parkCount; i++ {
-		event := subscription.Recv().EventAppeared
-		subscription.Nack("reason", esdb.Nack_Park, event)
-	}
 }
