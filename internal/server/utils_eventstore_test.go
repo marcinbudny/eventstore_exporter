@@ -4,13 +4,16 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
+	jp "github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
+	"github.com/marcinbudny/eventstore_exporter/internal/client"
 )
 
 func getEventstoreHttpClient() *http.Client {
@@ -39,6 +42,33 @@ func replayParkedMessages(t *testing.T, streamID string, groupName string) {
 	if res.StatusCode != 200 {
 		t.Fatal("Unable to replay messages")
 	}
+}
+
+func getEsVersion(t *testing.T) client.EventStoreVersion {
+	httpClient := getEventstoreHttpClient()
+
+	eventStoreURL := getEventStoreURL()
+
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/info", eventStoreURL), nil)
+	req.SetBasicAuth("admin", "changeit")
+	req.Header.Add("Accept", "application/json")
+	res, errPost := httpClient.Do(req)
+
+	if errPost != nil {
+		t.Fatal(errPost)
+	}
+
+	if res.StatusCode != 200 {
+		t.Fatal("Unable to get ES version")
+	}
+
+	buf, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	versionString, _ := jp.GetString(buf, "esVersion")
+	return client.EventStoreVersion(versionString)
 }
 
 func getEventStoreURL() string {

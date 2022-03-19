@@ -98,8 +98,10 @@ func Test_ParkedMessages_SubscriptionToAllMetric_With_Replayed_Messages(t *testi
 }
 
 func shouldRunSubscriptionToAllTests(t *testing.T) bool {
+
+	esVersion := getEsVersion(t)
 	// do not run in cluster mode, as this causes issues when not connected to leader node
-	return os.Getenv("TEST_CLUSTER_MODE") != "cluster"
+	return os.Getenv("TEST_CLUSTER_MODE") != "cluster" && esVersion.IsAtLeastVersion("21.10.0.0")
 }
 
 func prepareSubscriptionToAllEnvironment(t *testing.T, totalCount int, ackCount int, parkCount int) string {
