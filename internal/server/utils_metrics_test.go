@@ -89,6 +89,12 @@ func assertMetric(
 func anyValue(*testing.T, float64) {
 }
 
+func nonZeroValue(t *testing.T, actualValue float64) {
+	if actualValue == 0.0 {
+		t.Errorf("Expected non-zero value")
+	}
+}
+
 func hasValue(expectedValue float64) func(*testing.T, float64) {
 	return func(t *testing.T, actualValue float64) {
 		if expectedValue != actualValue {

@@ -109,3 +109,18 @@ func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb
 		t.Fatal(err)
 	}
 }
+
+func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
+	for i := 0; i < ackCount; i++ {
+		event := subscription.Recv().EventAppeared
+		subscription.Ack(event)
+	}
+}
+
+func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubscription) {
+
+	for i := 0; i < parkCount; i++ {
+		event := subscription.Recv().EventAppeared
+		subscription.Nack("reason", esdb.Nack_Park, event)
+	}
+}
