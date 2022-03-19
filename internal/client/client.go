@@ -8,6 +8,7 @@ import (
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
+	log "github.com/sirupsen/logrus"
 )
 
 type EventStoreStatsClient struct {
@@ -50,7 +51,10 @@ func New(config *config.Config) *EventStoreStatsClient {
 }
 
 func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
+	log.Debug("Creating ES grpc client")
+
 	url, err := url.Parse(client.config.EventStoreURL)
+
 	if err != nil {
 		return nil, err
 	}

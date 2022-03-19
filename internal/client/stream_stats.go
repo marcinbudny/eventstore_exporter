@@ -50,6 +50,7 @@ func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats,
 		go func(stream string) {
 			defer wg.Done()
 
+			log.WithField("stream", stream).Debug("Getting stream stats")
 			if stats, getErr := getSingleStreamStats(grpcClient, stream, client.config.Timeout); getErr == nil {
 				streamStats <- stats
 			}

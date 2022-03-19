@@ -128,6 +128,8 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 		go func(subscription *SubscriptionStats) {
 			defer wg.Done()
 
+			log.WithField("eventStreamId", subscription.EventStreamID).WithField("groupName", subscription.GroupName).Debug("Getting subscription parked message stats")
+
 			subscription.OldestParkedMessageAgeInSeconds = -1
 
 			parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(grpcClient, subscription.EventStreamID, subscription.GroupName, client.config.Timeout)
@@ -142,7 +144,7 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 				return
 			}
 
-			totalNumberOfParkedMessages := lastEventNumber + 1 - truncateBeforeValue // +1 becaues ids start from 0
+			totalNumberOfParkedMessages := lastEventNumber + 1 - truncateBeforeValue // +1 because ids start from 0
 
 			var oldestParkedMessageAgeInSeconds float64 = 0
 			if totalNumberOfParkedMessages > 0 {
