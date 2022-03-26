@@ -35,6 +35,10 @@ func (client *EventStoreStatsClient) getStreamStats() <-chan getStreamStatsResul
 }
 
 func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats, error) {
+	if len(client.config.Streams) == 0 {
+		return make([]StreamStats, 0), nil
+	}
+
 	grpcClient, err := client.getGrpcClient()
 	if err != nil {
 		return nil, err

@@ -112,6 +112,10 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 }
 
 func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []SubscriptionStats) {
+	if len(subscriptions) == 0 {
+		return
+	}
+
 	grpcClient, err := client.getGrpcClient()
 
 	if err != nil {
