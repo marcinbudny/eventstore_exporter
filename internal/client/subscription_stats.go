@@ -113,6 +113,7 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 
 func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []SubscriptionStats) {
 	grpcClient, err := client.getGrpcClient()
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
