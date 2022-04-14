@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
 )
 
 func Test_Basic_SubscriptionMetrics(t *testing.T) {
@@ -151,16 +151,16 @@ func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount 
 
 func createSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) {
 	if err := client.CreatePersistentSubscription(context.Background(), streamID, groupName, esdb.PersistentStreamSubscriptionOptions{
-		From: esdb.Start{},
+		StartFrom: esdb.Start{},
 	}); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func connectToSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) *esdb.PersistentSubscription {
-	subscription, err := client.ConnectToPersistentSubscription(
+	subscription, err := client.SubscribeToPersistentSubscription(
 
-		context.Background(), streamID, groupName, esdb.ConnectToPersistentSubscriptionOptions{BatchSize: 1})
+		context.Background(), streamID, groupName, esdb.SubscribeToPersistentSubscriptionOptions{BufferSize: 1})
 
 	if err != nil {
 		t.Fatal(err)

@@ -39,7 +39,7 @@ func Load(args []string, suppressOutput bool) (*Config, error) {
 	fs.BoolVar(&config.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
 	fs.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
 	streamsString := fs.String("streams", "", "List of streams to get metrics for")
-	fs.StringVar(&config.StreamsSeparator, "streams-separator", ",", "Separator for streams list")
+	fs.StringVar(&config.StreamsSeparator, "streams-separator", ",", "Separator for streams list (default: ',')")
 
 	if suppressOutput {
 		fs.Usage = func() {}

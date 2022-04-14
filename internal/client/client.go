@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	log "github.com/sirupsen/logrus"
 )

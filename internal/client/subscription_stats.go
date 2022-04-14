@@ -3,12 +3,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
 	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -172,7 +173,9 @@ func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID s
 
 	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)}, 1)
 	if err == nil {
+		defer read.Close()
 		event, err := read.Recv()
+
 		if err == nil {
 			created := event.Event.CreatedDate
 			loc, _ := time.LoadLocation("UTC")
@@ -180,6 +183,8 @@ func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID s
 			age := float64(timeNow.Sub(created) / time.Second)
 
 			return age, nil
+		} else if err == io.EOF {
+			return -1, nil
 		}
 	}
 
@@ -198,9 +203,13 @@ func getParkedMessagesLastEventNumber(grpcClient *esdb.Client, eventStreamID str
 
 	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, 1)
 	if err == nil {
+		defer read.Close()
 		event, err := read.Recv()
+
 		if err == nil {
 			return true, event.Event.EventNumber, nil
+		} else if err == io.EOF {
+			return false, 0, nil
 		}
 	}
 
