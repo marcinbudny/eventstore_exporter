@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/EventStore/EventStore-Client-Go/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
 	jp "github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
@@ -143,7 +143,7 @@ func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb
 func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
 	for i := 0; i < ackCount; i++ {
 		event := subscription.Recv().EventAppeared
-		subscription.Ack(event)
+		subscription.Ack(event.Event)
 	}
 }
 
@@ -151,6 +151,6 @@ func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubs
 
 	for i := 0; i < parkCount; i++ {
 		event := subscription.Recv().EventAppeared
-		subscription.Nack("reason", esdb.Nack_Park, event)
+		subscription.Nack("reason", esdb.Nack_Park, event.Event)
 	}
 }
