@@ -27,6 +27,7 @@ func readAndValidateConfig() *config.Config {
 			"clusterMode":               config.ClusterMode,
 			"insecureSkipVerify":        config.InsecureSkipVerify,
 			"enableParkedMessagesStats": config.EnableParkedMessagesStats,
+			"streams":                   config.Streams,
 		}).Infof("EventStore exporter configured")
 
 		return config
