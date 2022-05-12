@@ -1,10 +1,13 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
 	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -59,4 +62,40 @@ func (client *EventStoreStatsClient) esHttpGet(path string, acceptNotFound bool)
 	}
 
 	return buf, nil
+}
+
+func readSingleEvent(grpcClient *esdb.Client, stream string, options esdb.ReadStreamOptions, timeout time.Duration) (*esdb.ResolvedEvent, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	read, err := grpcClient.ReadStream(ctx, stream, options, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	defer read.Close()
+	event, err := read.Recv()
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
+}
+
+func readSingleEventFromAll(grpcClient *esdb.Client, options esdb.ReadAllOptions, timeout time.Duration) (*esdb.ResolvedEvent, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	read, err := grpcClient.ReadAll(ctx, options, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	defer read.Close()
+	event, err := read.Recv()
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
 }

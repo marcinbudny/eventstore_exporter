@@ -85,17 +85,13 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 			stats.LastProcessedEventNumber = -1
 
 			if lastCheckpointedEventPosition, err := parseEventPosition(getString(jsonValue, "lastCheckpointedEventPosition")); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Errorf("Error while parsing last checkpointed event position of $all stream subscription group %s", stats.GroupName)
+				log.WithError(err).Errorf("Error while parsing last checkpointed event position of $all stream subscription group %s", stats.GroupName)
 			} else {
 				stats.LastCheckpointedEventPosition = lastCheckpointedEventPosition
 			}
 
 			if lastKnownEventPosition, err := parseEventPosition(getString(jsonValue, "lastKnownEventPosition")); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Errorf("Error while parsing last known even position of $all stream subscription group %s", stats.GroupName)
+				log.WithError(err).Errorf("Error while parsing last known even position of $all stream subscription group %s", stats.GroupName)
 			} else {
 				stats.LastKnownEventPosition = lastKnownEventPosition
 			}
@@ -120,9 +116,7 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 	grpcClient, err := client.getGrpcClient()
 
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Error when creating grpc client")
+		log.WithError(err).Error("Error when creating grpc client")
 	}
 	defer grpcClient.Close()
 
@@ -168,58 +162,42 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 }
 
 func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID string, groupName string, oldestMessagePosition uint64, timeout time.Duration) (float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	event, err := readSingleEvent(grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)}, timeout)
 
-	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)}, 1)
-	if err == nil {
-		defer read.Close()
-		event, err := read.Recv()
+	if err == io.EOF {
+		return -1, nil
+	} else if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+		}).Error("Error when getting parked messages stream.")
 
-		if err == nil {
-			created := event.Event.CreatedDate
-			loc, _ := time.LoadLocation("UTC")
-			timeNow := time.Now().In(loc)
-			age := float64(timeNow.Sub(created) / time.Second)
-
-			return age, nil
-		} else if err == io.EOF {
-			return -1, nil
-		}
+		return 0, err
 	}
 
-	log.WithFields(log.Fields{
-		"eventStreamId": eventStreamID,
-		"groupName":     groupName,
-		"error":         err,
-	}).Error("Error when getting parked messages stream.")
+	created := event.Event.CreatedDate
+	loc, _ := time.LoadLocation("UTC")
+	timeNow := time.Now().In(loc)
+	age := float64(timeNow.Sub(created) / time.Second)
 
-	return 0, err
+	return age, nil
 }
 
 func getParkedMessagesLastEventNumber(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (bool, uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	event, err := readSingleEvent(grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
 
-	read, err := grpcClient.ReadStream(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, 1)
-	if err == nil {
-		defer read.Close()
-		event, err := read.Recv()
+	if err == io.EOF {
+		return false, 0, nil
+	} else if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"eventStreamId": eventStreamID,
+			"groupName":     groupName,
+		}).Error("Error when getting parked messages stream.")
 
-		if err == nil {
-			return true, event.Event.EventNumber, nil
-		} else if err == io.EOF {
-			return false, 0, nil
-		}
+		return false, 0, err
 	}
 
-	log.WithFields(log.Fields{
-		"eventStreamId": eventStreamID,
-		"groupName":     groupName,
-		"error":         err,
-	}).Error("Error when getting parked messages stream.")
-
-	return false, 0, err
+	return true, event.Event.EventNumber, nil
 }
 
 func getParkedMessagesTruncateBeforeValue(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (uint64, error) {
@@ -231,10 +209,9 @@ func getParkedMessagesTruncateBeforeValue(grpcClient *esdb.Client, eventStreamID
 	} else if strings.Contains(err.Error(), "not found") {
 		return 0, nil
 	} else {
-		log.WithFields(log.Fields{
+		log.WithError(err).WithFields(log.Fields{
 			"eventStreamId": eventStreamID,
 			"groupName":     groupName,
-			"error":         err,
 		}).Error("Error when getting parked message stream metadata")
 
 		return 0, err

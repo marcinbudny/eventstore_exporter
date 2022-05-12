@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -86,50 +85,37 @@ func getSingleStreamStats(grpcClient *esdb.Client, stream string, timeout time.D
 }
 
 func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamStats, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	event, err := readSingleEventFromAll(grpcClient, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.EndPosition}, timeout)
 
-	read, err := grpcClient.ReadAll(ctx, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.EndPosition}, 1)
-	if err == nil {
-		defer read.Close()
-		event, err := read.Recv()
-		if err == nil {
-			return StreamStats{
-				EventStreamID:      "$all",
-				LastCommitPosition: int64(event.Event.Position.Commit),
-				LastEventNumber:    -1,
-			}, nil
-		}
+	if err != nil {
+		log.WithError(err).Error("Error when reading last event from $all stream")
+
+		return StreamStats{}, err
 	}
 
-	log.WithFields(log.Fields{
-		"error": err,
-	}).Error("Error when reading last event from $all stream")
+	return StreamStats{
+		EventStreamID:      "$all",
+		LastCommitPosition: int64(event.Event.Position.Commit),
+		LastEventNumber:    -1,
+	}, nil
 
-	return StreamStats{}, err
 }
 
 func getRegularStreamStats(grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
-	read, err := grpcClient.ReadStream(ctx, stream, esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, 1)
-	if err == nil {
-		defer read.Close()
-		event, err := read.Recv()
-		if err == nil {
-			return StreamStats{
-				EventStreamID:      stream,
-				LastCommitPosition: -1,
-				LastEventNumber:    int64(event.Event.EventNumber),
-			}, nil
-		}
+	event, err := readSingleEvent(grpcClient, stream, esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
+	if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"streamId": stream,
+		}).Error("Error when reading last event from stream")
+
+		return StreamStats{}, err
 	}
 
-	log.WithFields(log.Fields{
-		"streamId": stream,
-		"error":    err,
-	}).Error("Error when reading last event from stream")
+	return StreamStats{
+		EventStreamID:      stream,
+		LastCommitPosition: -1,
+		LastEventNumber:    int64(event.Event.EventNumber),
+	}, nil
 
-	return StreamStats{}, err
 }

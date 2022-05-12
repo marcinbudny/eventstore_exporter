@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -68,6 +69,7 @@ func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
 		MaxDiscoverAttempts:         10,
 		KeepAliveInterval:           10 * time.Second,
 		KeepAliveTimeout:            10 * time.Second,
+		Logger:                      loggerAdapter,
 	}
 
 	if client.config.EventStoreUser != "" && client.config.EventStorePassword != "" {
@@ -137,4 +139,21 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	}
 
 	return stats, nil
+}
+
+func loggerAdapter(level esdb.LogLevel, format string, args ...interface{}) {
+	mappedLevel := log.InfoLevel
+
+	switch level {
+	case "debug":
+		mappedLevel = log.DebugLevel
+	case "warn":
+		mappedLevel = log.WarnLevel
+	case "error":
+		mappedLevel = log.ErrorLevel
+	}
+
+	if log.IsLevelEnabled(mappedLevel) {
+		log.StandardLogger().WithField("context", "esdb_client").Log(mappedLevel, fmt.Sprintf(format, args...))
+	}
 }
