@@ -12,6 +12,8 @@ type getProjectionStatsResult struct {
 type ProjectionStats struct {
 	Name                        string
 	Running                     bool
+	Stopped                     bool
+	Faulted                     bool
 	Progress                    float64
 	EventsProcessedAfterRestart int64
 }
@@ -40,6 +42,8 @@ func getProjectionStats(projectionsJson []byte) []ProjectionStats {
 		projections = append(projections, ProjectionStats{
 			Name:                        getString(jsonValue, "effectiveName"),
 			Running:                     getString(jsonValue, "status") == "Running",
+			Stopped:                     getString(jsonValue, "status") == "Stopped",
+			Faulted:                     getString(jsonValue, "status") == "Faulted",
 			Progress:                    getFloat(jsonValue, "progress") / 100.0, // scale to 0-1
 			EventsProcessedAfterRestart: getInt(jsonValue, "eventsProcessedAfterRestart"),
 		})

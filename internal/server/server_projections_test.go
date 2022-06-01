@@ -18,6 +18,7 @@ func Test_ProjectionMetrics(t *testing.T) {
 
 	metrics := getMetrics(ts.URL, t)
 	assertHasMetric(t, metrics, "eventstore_projection_running", "gauge")
+	assertHasMetric(t, metrics, "eventstore_projection_status", "gauge")
 	assertHasMetric(t, metrics, "eventstore_projection_progress", "gauge")
 	assertHasMetric(t, metrics, "eventstore_projection_events_processed_after_restart_total", "counter")
 }
