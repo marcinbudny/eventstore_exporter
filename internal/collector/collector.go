@@ -30,6 +30,7 @@ type Collector struct {
 	driveAvailableBytes *prometheus.Desc
 
 	projectionRunning                     *prometheus.Desc
+	projectionStatus                      *prometheus.Desc
 	projectionProgress                    *prometheus.Desc
 	projectionEventsProcessedAfterRestart *prometheus.Desc
 
@@ -77,6 +78,7 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		driveAvailableBytes: prometheus.NewDesc("eventstore_drive_available_bytes", "Drive available bytes", []string{"drive"}, nil),
 
 		projectionRunning:                     prometheus.NewDesc("eventstore_projection_running", "If 1, projection is in 'Running' state", []string{"projection"}, nil),
+		projectionStatus:                      prometheus.NewDesc("eventstore_projection_status", "If 1, projection is in specified state", []string{"projection", "status"}, nil),
 		projectionProgress:                    prometheus.NewDesc("eventstore_projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", []string{"projection"}, nil),
 		projectionEventsProcessedAfterRestart: prometheus.NewDesc("eventstore_projection_events_processed_after_restart_total", "Projection event processed count after restart", []string{"projection"}, nil),
 
@@ -121,6 +123,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.driveAvailableBytes
 
 	ch <- c.projectionRunning
+	ch <- c.projectionStatus
 	ch <- c.projectionProgress
 	ch <- c.projectionEventsProcessedAfterRestart
 
@@ -176,10 +179,21 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		for _, projection := range stats.Projections {
 			running := 0.0
+			stopped := 0.0
+			faulted := 0.0
 			if projection.Running {
 				running = 1.0
 			}
+			if projection.Stopped {
+				stopped = 1.0
+			}
+			if projection.Faulted {
+				faulted = 1.0
+			}
 			ch <- prometheus.MustNewConstMetric(c.projectionRunning, prometheus.GaugeValue, running, projection.Name)
+			ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, running, projection.Name, "Running")
+			ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, stopped, projection.Name, "Stopped")
+			ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, faulted, projection.Name, "Faulted")
 			ch <- prometheus.MustNewConstMetric(c.projectionProgress, prometheus.GaugeValue, projection.Progress, projection.Name)
 			ch <- prometheus.MustNewConstMetric(c.projectionEventsProcessedAfterRestart, prometheus.CounterValue, float64(projection.EventsProcessedAfterRestart), projection.Name)
 		}
