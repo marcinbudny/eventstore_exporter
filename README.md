@@ -49,14 +49,14 @@ eventstore_exporter \
 
 ### Supported EventStoreDB versions
 
-- 20.10 LTS
-- 21.10 LTS
+-   20.10 LTS
+-   21.10 LTS
 
 Other versions may also work but are not tested.
 
 ### Unsupported versions
 
-- 5.0 (last supported in exporter version v0.10.4)
+-   5.0 (last supported in exporter version v0.10.4)
 
 ## Configuration
 
@@ -165,6 +165,12 @@ eventstore_projection_progress{projection="$by_event_type"} 1
 # HELP eventstore_projection_running If 1, projection is in 'Running' state
 # TYPE eventstore_projection_running gauge
 eventstore_projection_running{projection="$by_event_type"} 1
+
+# HELP eventstore_projection_status If 1, projection is in specified state
+# TYPE eventstore_projection_status gauge
+eventstore_projection_status{projection="$by_event_type",status="Faulted"} 0
+eventstore_projection_status{projection="$by_event_type",status="Running"} 1
+eventstore_projection_status{projection="$by_event_type",status="Stopped"} 0
 
 # HELP eventstore_queue_items_processed_total Total number items processed by queue
 # TYPE eventstore_queue_items_processed_total counter
