@@ -1,6 +1,8 @@
 package client
 
 import (
+	"strings"
+
 	jp "github.com/buger/jsonparser"
 )
 
@@ -43,7 +45,7 @@ func getProjectionStats(projectionsJson []byte) []ProjectionStats {
 			Name:                        getString(jsonValue, "effectiveName"),
 			Running:                     getString(jsonValue, "status") == "Running",
 			Stopped:                     getString(jsonValue, "status") == "Stopped",
-			Faulted:                     getString(jsonValue, "status") == "Faulted",
+			Faulted:                     strings.Contains(getString(jsonValue, "status"), "Faulted"),
 			Progress:                    getFloat(jsonValue, "progress") / 100.0, // scale to 0-1
 			EventsProcessedAfterRestart: getInt(jsonValue, "eventsProcessedAfterRestart"),
 		})
