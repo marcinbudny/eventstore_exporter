@@ -2,7 +2,7 @@ version: '3'
 
 services:
   eventstore1:
-    image: eventstore/eventstore:21.10.2-buster-slim
+    image: eventstore/eventstore:21.10.8-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 
   eventstore2:
-    image: eventstore/eventstore:21.10.2-buster-slim
+    image: eventstore/eventstore:21.10.8-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -44,7 +44,7 @@ services:
     entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore3:
-    image: eventstore/eventstore:21.10.2-buster-slim
+    image: eventstore/eventstore:21.10.8-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -66,7 +66,7 @@ services:
     entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore4:
-    image: eventstore/eventstore:21.10.2-buster-slim
+    image: eventstore/eventstore:21.10.8-buster-slim
     env_file:
       - common-variables.env
     environment:
@@ -88,7 +88,7 @@ services:
     entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore-ro-replica:
-    image: eventstore/eventstore:21.10.0-buster-slim
+    image: eventstore/eventstore:21.10.8-buster-slim
     env_file:
       - common-variables.env
     environment:
