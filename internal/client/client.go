@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -54,15 +54,15 @@ func New(config *config.Config) *EventStoreStatsClient {
 func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
 	log.Debug("Creating ES grpc client")
 
-	url, err := url.Parse(client.config.EventStoreURL)
+	esUrl, err := url.Parse(client.config.EventStoreURL)
 
 	if err != nil {
 		return nil, err
 	}
 
 	esConfig := &esdb.Configuration{
-		Address:                     url.Host,
-		DisableTLS:                  url.Scheme != "https",
+		Address:                     esUrl.Host,
+		DisableTLS:                  esUrl.Scheme != "https",
 		SkipCertificateVerification: client.config.InsecureSkipVerify,
 		DiscoveryInterval:           100,
 		GossipTimeout:               5,

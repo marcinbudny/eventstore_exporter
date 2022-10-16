@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -85,7 +85,7 @@ func getSingleStreamStats(grpcClient *esdb.Client, stream string, timeout time.D
 }
 
 func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamStats, error) {
-	event, err := readSingleEventFromAll(grpcClient, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.EndPosition}, timeout)
+	event, err := readSingleEventFromAll(grpcClient, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
 
 	if err != nil {
 		log.WithError(err).Error("Error when reading last event from $all stream")

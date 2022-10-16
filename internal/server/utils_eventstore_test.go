@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	jp "github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
@@ -62,7 +62,7 @@ func getEsVersion(t *testing.T) client.EventStoreVersion {
 		t.Fatal("Unable to get ES version")
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	buf, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,12 +104,12 @@ func getEsClient(t *testing.T) *esdb.Client {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := esdb.NewClient(config)
+	esClient, err := esdb.NewClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return client
+	return esClient
 }
 
 func newStreamAndGroup() (streamID string, groupName string) {
@@ -117,8 +117,8 @@ func newStreamAndGroup() (streamID string, groupName string) {
 }
 
 func newUUID() string {
-	uuid, _ := uuid.NewV4()
-	return uuid.String()
+	id, _ := uuid.NewV4()
+	return id.String()
 }
 
 func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
@@ -126,7 +126,7 @@ func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb
 	for i := 0; i < eventCount; i++ {
 		events = append(events, esdb.EventData{
 			EventType:   "TestEvent",
-			ContentType: esdb.BinaryContentType,
+			ContentType: esdb.ContentTypeBinary,
 			Data:        []byte{0xb, 0xe, 0xe, 0xf},
 		})
 	}
@@ -143,7 +143,9 @@ func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb
 func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
 	for i := 0; i < ackCount; i++ {
 		event := subscription.Recv().EventAppeared
-		subscription.Ack(event.Event)
+		if err := subscription.Ack(event.Event); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -151,6 +153,8 @@ func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubs
 
 	for i := 0; i < parkCount; i++ {
 		event := subscription.Recv().EventAppeared
-		subscription.Nack("reason", esdb.Nack_Park, event.Event)
+		if err := subscription.Nack("reason", esdb.NackActionPark, event.Event); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

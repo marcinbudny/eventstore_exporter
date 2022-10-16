@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 )
 
 func Test_Basic_SubscriptionMetrics(t *testing.T) {
-	if !shouldRunSubscriptionTests(t) {
+	if !shouldRunSubscriptionTests() {
 		t.Log("Skipping subscriptions tests")
 		return
 	}
@@ -40,7 +40,7 @@ func Test_Basic_SubscriptionMetrics(t *testing.T) {
 }
 
 func Test_ParkedMessages_SubscriptionMetric(t *testing.T) {
-	if !shouldRunSubscriptionTests(t) {
+	if !shouldRunSubscriptionTests() {
 		t.Log("Skipping subscriptions tests")
 		return
 	}
@@ -60,7 +60,7 @@ func Test_ParkedMessages_SubscriptionMetric(t *testing.T) {
 }
 
 func Test_OldestParkedMessage_SubscriptionMetric(t *testing.T) {
-	if !shouldRunSubscriptionTests(t) {
+	if !shouldRunSubscriptionTests() {
 		t.Log("Skipping subscriptions tests")
 		return
 	}
@@ -80,7 +80,7 @@ func Test_OldestParkedMessage_SubscriptionMetric(t *testing.T) {
 }
 
 func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T) {
-	if !shouldRunSubscriptionTests(t) {
+	if !shouldRunSubscriptionTests() {
 		t.Log("Skipping subscriptions tests")
 		return
 	}
@@ -97,7 +97,7 @@ func Test_ParkedMessages_SubscriptionMetric_With_Replayed_Messages(t *testing.T)
 		metricByLabelValue("group_name", groupName), hasValue(float64(0)))
 }
 
-func shouldRunSubscriptionTests(t *testing.T) bool {
+func shouldRunSubscriptionTests() bool {
 	// do not run in cluster mode, as this causes issues when not connected to leader node
 	return os.Getenv("TEST_CLUSTER_MODE") != "cluster"
 }

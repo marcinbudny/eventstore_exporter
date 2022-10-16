@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )

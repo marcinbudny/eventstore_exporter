@@ -3,11 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -56,7 +56,7 @@ func (client *EventStoreStatsClient) esHttpGet(path string, acceptNotFound bool)
 		return nil, fmt.Errorf("HTTP call to %s resulted in status code %d", url, response.StatusCode)
 	}
 
-	buf, err := ioutil.ReadAll(response.Body)
+	buf, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}

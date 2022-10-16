@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v2/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 )
 
 func Test_Basic_SubscriptionAllMetrics(t *testing.T) {

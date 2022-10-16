@@ -3,7 +3,7 @@ module github.com/marcinbudny/eventstore_exporter
 go 1.18
 
 require (
-	github.com/EventStore/EventStore-Client-Go/v2 v2.1.0
+	github.com/EventStore/EventStore-Client-Go/v3 v3.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/google/go-cmp v0.5.8
@@ -20,7 +20,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/opencontainers/runc v1.1.2 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
