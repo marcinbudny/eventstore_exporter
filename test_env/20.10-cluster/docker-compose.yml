@@ -98,7 +98,7 @@ services:
     restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:v2.19.0
+    image: prom/prometheus:v2.39.1
     command:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention=30d
@@ -111,7 +111,7 @@ services:
       - 9090:9090
 
   grafana:
-    image: grafana/grafana:7.5.2
+    image: grafana/grafana:9.1.7
     depends_on:
       - prometheus
     environment:
@@ -119,16 +119,11 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
       - grafana-volume:/var/lib/grafana
+      - ../common/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ../common/grafana/provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ../common/grafana/dashboards:/var/lib/grafana-dashboards
     ports:
       - 3000:3000
-
-  grafana-init:
-    image: alpine:3.12
-    depends_on:
-      - grafana
-    volumes:
-      - ../common/init:/root/init/
-    command: sh -c "chmod +x /root/init/grafana-init.sh && sh /root/init/grafana-init.sh"
 
 networks:
   clusternetwork:
