@@ -1,6 +1,6 @@
 module github.com/marcinbudny/eventstore_exporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/EventStore/EventStore-Client-Go/v3 v3.0.0
