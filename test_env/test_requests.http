@@ -1,118 +1,119 @@
 @url = http://localhost:2113
+@auth = admin:changeit
 
 ###
 
 GET {{url}}/stats
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/projections/all-non-transient
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/info
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/subscriptions
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/gossip
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/subscriptions/test-stream/group-test/info
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 ###
 
 GET {{url}}/subscriptions/$all/group-test/info
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 
 
 ###
 
 GET {{url}}/streams/$all/head/backward/1
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/test-stream
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-test-stream::group-test-parked
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-test-stream::group-test-parked/metadata
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 
 ###
 
 GET {{url}}/streams/%24persistentsubscription-test-stream::group-test-parked/head/backward/1
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-test-stream::group-test-parked/0/forward/1
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-$all::group-test-parked
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-$all::group-test-parked/metadata
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-$all::group-test-parked/head/backward/1
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/$persistentsubscription-$all::group-test-parked/0/forward/1
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
 GET {{url}}/streams/test-stream/131/forward/20?embed=body
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
-GET {{url}}/streams/test-stream
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+GET {{url}}/streams/my-stream
+Authorization: Basic {{auth}}
 Accept: application/json
 
 ###
 
-GET {{url}}/streams/test-stream/metadata
-Authorization: Basic YWRtaW46Y2hhbmdlaXQ=
+GET {{url}}/streams/my-stream/metadata
+Authorization: Basic {{auth}}
 Accept: application/json
 

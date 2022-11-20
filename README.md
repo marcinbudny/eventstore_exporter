@@ -51,6 +51,7 @@ eventstore_exporter \
 
 -   20.10 LTS
 -   21.10 LTS
+-   22.10 LTS
 
 Other versions may also work but are not tested.
 
