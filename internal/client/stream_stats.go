@@ -14,23 +14,12 @@ type StreamStats struct {
 	LastEventNumber    int64
 }
 
-type getStreamStatsResult struct {
-	streams []StreamStats
-	err     error
-}
-
-func (client *EventStoreStatsClient) getStreamStats() <-chan getStreamStatsResult {
-	resultChan := make(chan getStreamStatsResult, 1)
-
-	go func() {
-		if streamStats, err := getStreamStatsFromEachStream(client); err == nil {
-			resultChan <- getStreamStatsResult{streams: streamStats}
-		} else {
-			resultChan <- getStreamStatsResult{err: err}
-		}
-	}()
-
-	return resultChan
+func (client *EventStoreStatsClient) getStreamStats() ([]StreamStats, error) {
+	if streamStats, err := getStreamStatsFromEachStream(client); err == nil {
+		return streamStats, nil
+	} else {
+		return nil, err
+	}
 }
 
 func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats, error) {

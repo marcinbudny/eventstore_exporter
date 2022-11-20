@@ -11,20 +11,12 @@ type getEsVersionResult struct {
 	err       error
 }
 
-func (client *EventStoreStatsClient) getEsVersion() <-chan getEsVersionResult {
-	result := make(chan getEsVersionResult, 1)
-
-	go func() {
-		if infoJson, err := client.esHttpGet("/info", false); err == nil {
-			result <- getEsVersionResult{
-				esVersion: EventStoreVersion(getString(infoJson, "esVersion")),
-			}
-		} else {
-			result <- getEsVersionResult{err: err}
-		}
-	}()
-
-	return result
+func (client *EventStoreStatsClient) getEsVersion() (EventStoreVersion, error) {
+	if infoJson, err := client.esHttpGet("/info", false); err == nil {
+		return EventStoreVersion(getString(infoJson, "esVersion")), nil
+	} else {
+		return "", err
+	}
 }
 
 func (esVersion EventStoreVersion) IsAtLeastVersion(minVersion string) bool {

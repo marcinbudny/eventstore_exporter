@@ -6,11 +6,6 @@ import (
 	jp "github.com/buger/jsonparser"
 )
 
-type getProjectionStatsResult struct {
-	projections []ProjectionStats
-	err         error
-}
-
 type ProjectionStats struct {
 	Name                        string
 	Running                     bool
@@ -20,21 +15,12 @@ type ProjectionStats struct {
 	EventsProcessedAfterRestart int64
 }
 
-func (client *EventStoreStatsClient) getProjectionStats() <-chan getProjectionStatsResult {
-	stats := make(chan getProjectionStatsResult, 1)
-
-	go func() {
-		if projectionsJson, err := client.esHttpGet("/projections/all-non-transient", true); err == nil {
-			stats <- getProjectionStatsResult{
-				projections: getProjectionStats(projectionsJson),
-			}
-		} else {
-			stats <- getProjectionStatsResult{err: err}
-		}
-
-	}()
-
-	return stats
+func (client *EventStoreStatsClient) getProjectionStats() ([]ProjectionStats, error) {
+	if projectionsJson, err := client.esHttpGet("/projections/all-non-transient", true); err == nil {
+		return getProjectionStats(projectionsJson), nil
+	} else {
+		return nil, err
+	}
 }
 
 func getProjectionStats(projectionsJson []byte) []ProjectionStats {

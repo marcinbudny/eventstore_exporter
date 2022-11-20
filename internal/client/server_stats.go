@@ -8,8 +8,6 @@ type getServerStatsResult struct {
 	tcpStats *TcpStats
 	queues   []QueueStats
 	drives   []DriveStats
-
-	err error
 }
 
 type ProcessStats struct {
@@ -42,35 +40,30 @@ type DriveStats struct {
 	AvailableBytes int64
 }
 
-func (esClient *EventStoreStatsClient) getServerStats() <-chan getServerStatsResult {
-	stats := make(chan getServerStatsResult, 1)
-	go func() {
-		if serverJson, err := esClient.esHttpGet("/stats", false); err == nil {
-			stats <- getServerStatsResult{
-				process: &ProcessStats{
-					Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,
-					MemoryBytes: getInt(serverJson, "proc", "mem"),
-				},
-				diskIo: &DiskIoStats{
-					ReadBytes:    getInt(serverJson, "proc", "diskIo", "readBytes"),
-					WrittenBytes: getInt(serverJson, "proc", "diskIo", "writtenBytes"),
-					ReadOps:      getInt(serverJson, "proc", "diskIo", "readOps"),
-					WriteOps:     getInt(serverJson, "proc", "diskIo", "writeOps"),
-				},
-				tcpStats: &TcpStats{
-					SentBytes:     getInt(serverJson, "proc", "tcp", "sentBytesTotal"),
-					ReceivedBytes: getInt(serverJson, "proc", "tcp", "receivedBytesTotal"),
-					Connections:   getInt(serverJson, "proc", "tcp", "connections"),
-				},
-				queues: getQueueStats(serverJson),
-				drives: getDriveStats(serverJson),
-			}
-		} else {
-			stats <- getServerStatsResult{err: err}
-		}
-	}()
-
-	return stats
+func (client *EventStoreStatsClient) getServerStats() (*getServerStatsResult, error) {
+	if serverJson, err := client.esHttpGet("/stats", false); err == nil {
+		return &getServerStatsResult{
+			process: &ProcessStats{
+				Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,
+				MemoryBytes: getInt(serverJson, "proc", "mem"),
+			},
+			diskIo: &DiskIoStats{
+				ReadBytes:    getInt(serverJson, "proc", "diskIo", "readBytes"),
+				WrittenBytes: getInt(serverJson, "proc", "diskIo", "writtenBytes"),
+				ReadOps:      getInt(serverJson, "proc", "diskIo", "readOps"),
+				WriteOps:     getInt(serverJson, "proc", "diskIo", "writeOps"),
+			},
+			tcpStats: &TcpStats{
+				SentBytes:     getInt(serverJson, "proc", "tcp", "sentBytesTotal"),
+				ReceivedBytes: getInt(serverJson, "proc", "tcp", "receivedBytesTotal"),
+				Connections:   getInt(serverJson, "proc", "tcp", "connections"),
+			},
+			queues: getQueueStats(serverJson),
+			drives: getDriveStats(serverJson),
+		}, nil
+	} else {
+		return nil, err
+	}
 }
 
 func getQueueStats(serverStats []byte) []QueueStats {

@@ -14,11 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type getSubscriptionStatsResult struct {
-	subscriptions []SubscriptionStats
-	err           error
-}
-
 type SubscriptionStats struct {
 	EventStreamID                   string
 	GroupName                       string
@@ -33,30 +28,21 @@ type SubscriptionStats struct {
 	OldestParkedMessageAgeInSeconds float64
 }
 
-func (client *EventStoreStatsClient) getSubscriptionStats() <-chan getSubscriptionStatsResult {
-	stats := make(chan (getSubscriptionStatsResult), 1)
+func (client *EventStoreStatsClient) getSubscriptionStats() ([]SubscriptionStats, error) {
+	subscriptionsJson, err := client.esHttpGet("/subscriptions", false)
+	if err != nil {
+		return nil, err
+	}
 
-	go func() {
-		subscriptionsJson, err := client.esHttpGet("/subscriptions", false)
-		if err != nil {
-			stats <- getSubscriptionStatsResult{err: err}
-		}
+	subscriptions := getSubscriptions(subscriptionsJson)
 
-		subscriptions := getSubscriptions(subscriptionsJson)
+	if client.config.EnableParkedMessagesStats {
+		client.addParkedMessagesStats(subscriptions)
+	} else {
+		markParkedMessageStatsAsUnavailable(subscriptions)
+	}
 
-		if client.config.EnableParkedMessagesStats {
-			client.addParkedMessagesStats(subscriptions)
-		} else {
-			markParkedMessageStatsAsUnavailable(subscriptions)
-		}
-
-		stats <- getSubscriptionStatsResult{
-			subscriptions: subscriptions,
-		}
-
-	}()
-
-	return stats
+	return subscriptions, nil
 }
 
 func markParkedMessageStatsAsUnavailable(subscriptions []SubscriptionStats) {

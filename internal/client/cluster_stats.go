@@ -6,11 +6,6 @@ import (
 	jp "github.com/buger/jsonparser"
 )
 
-type getClusterStatsResult struct {
-	cluster *ClusterStats
-	err     error
-}
-
 type ClusterMemberType int
 
 const (
@@ -31,36 +26,27 @@ type ClusterStats struct {
 	Members               []MemberStats
 }
 
-func (esClient *EventStoreStatsClient) getClusterStats() <-chan getClusterStatsResult {
-	stats := make(chan getClusterStatsResult, 1)
+func (client *EventStoreStatsClient) getClusterStats() (stats *ClusterStats, err error) {
+	if client.config.IsInClusterMode() {
 
-	go func() {
-		if esClient.config.IsInClusterMode() {
-
-			infoJson, err := esClient.esHttpGet("/info", false)
-			if err != nil {
-				stats <- getClusterStatsResult{err: err}
-				return
-			}
-
-			gossipJson, err := esClient.esHttpGet("/gossip", false)
-			if err != nil {
-				stats <- getClusterStatsResult{err: err}
-				return
-			}
-
-			stats <- getClusterStatsResult{
-				cluster: &ClusterStats{
-					CurrentNodeMemberType: getClusterMemberType(infoJson),
-					Members:               getMemberStats(gossipJson),
-				},
-			}
-		} else {
-			stats <- getClusterStatsResult{}
+		infoJson, err := client.esHttpGet("/info", false)
+		if err != nil {
+			return nil, err
 		}
-	}()
 
-	return stats
+		gossipJson, err := client.esHttpGet("/gossip", false)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ClusterStats{
+			CurrentNodeMemberType: getClusterMemberType(infoJson),
+			Members:               getMemberStats(gossipJson),
+		}, nil
+
+	} else {
+		return &ClusterStats{}, nil
+	}
 }
 
 func getClusterMemberType(infoJson []byte) ClusterMemberType {
@@ -80,9 +66,9 @@ func getClusterMemberType(infoJson []byte) ClusterMemberType {
 }
 
 func getMemberStats(gossipJson []byte) []MemberStats {
-	members := []MemberStats{}
+    var members []MemberStats
 
-	jp.ArrayEach(gossipJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
+	_, _ = jp.ArrayEach(gossipJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		ip := getString(jsonValue, "httpEndPointIp")
 		port := getInt(jsonValue, "httpEndPointPort")
 

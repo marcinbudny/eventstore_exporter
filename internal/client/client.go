@@ -10,6 +10,7 @@ import (
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 type EventStoreStatsClient struct {
@@ -81,61 +82,71 @@ func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
 }
 
 func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
-	esVersionChan := client.getEsVersion()
-	serverStatsChan := client.getServerStats()
-	projectionStatsChan := client.getProjectionStats()
-	subscriptionStatsChan := client.getSubscriptionStats()
-	streamStatsChan := client.getStreamStats()
+	// TODO: support cancellation on error
+	group := &errgroup.Group{}
 
-	var clusterStatsChan <-chan getClusterStatsResult
-	if client.config.IsInClusterMode() {
-		clusterStatsChan = client.getClusterStats()
-	}
+	stats := &Stats{}
 
-	esVersionResult := <-esVersionChan
-	serverStatsResult := <-serverStatsChan
-	projectionStatsResult := <-projectionStatsChan
-	subscriptionsStatsResult := <-subscriptionStatsChan
-	streamStatsResult := <-streamStatsChan
+	group.Go(func() error {
+		if esVersion, err := client.getEsVersion(); err != nil {
+			return err
+		} else {
+			stats.EsVersion = esVersion
+			return nil
+		}
+	})
 
-	var clusterStatsResult getClusterStatsResult
-	if client.config.IsInClusterMode() {
-		clusterStatsResult = <-clusterStatsChan
-	}
+	group.Go(func() error {
+		if serverStats, err := client.getServerStats(); err != nil {
+			return err
+		} else {
+			stats.Process = serverStats.process
+			stats.DiskIo = serverStats.diskIo
+			stats.Tcp = serverStats.tcpStats
+			stats.Queues = serverStats.queues
+			stats.Drives = serverStats.drives
+			return nil
+		}
+	})
 
-	if esVersionResult.err != nil {
-		return nil, esVersionResult.err
-	}
-	if serverStatsResult.err != nil {
-		return nil, serverStatsResult.err
-	}
-	if projectionStatsResult.err != nil {
-		return nil, projectionStatsResult.err
-	}
-	if subscriptionsStatsResult.err != nil {
-		return nil, subscriptionsStatsResult.err
-	}
-	if streamStatsResult.err != nil {
-		return nil, streamStatsResult.err
-	}
-	if client.config.IsInClusterMode() && clusterStatsResult.err != nil {
-		return nil, clusterStatsResult.err
-	}
+	group.Go(func() error {
+		if projectionStats, err := client.getProjectionStats(); err != nil {
+			return err
+		} else {
+			stats.Projections = projectionStats
+			return nil
+		}
+	})
 
-	var stats = &Stats{
-		EsVersion:     esVersionResult.esVersion,
-		Process:       serverStatsResult.process,
-		DiskIo:        serverStatsResult.diskIo,
-		Tcp:           serverStatsResult.tcpStats,
-		Queues:        serverStatsResult.queues,
-		Drives:        serverStatsResult.drives,
-		Projections:   projectionStatsResult.projections,
-		Subscriptions: subscriptionsStatsResult.subscriptions,
-		Streams:       streamStatsResult.streams,
-	}
+	group.Go(func() error {
+		if subscriptionStats, err := client.getSubscriptionStats(); err != nil {
+			return err
+		} else {
+			stats.Subscriptions = subscriptionStats
+			return nil
+		}
+	})
 
-	if client.config.IsInClusterMode() {
-		stats.Cluster = clusterStatsResult.cluster
+	group.Go(func() error {
+		if streamStats, err := client.getStreamStats(); err != nil {
+			return err
+		} else {
+			stats.Streams = streamStats
+			return nil
+		}
+	})
+
+	group.Go(func() error {
+		if clusterStats, err := client.getClusterStats(); err != nil {
+			return err
+		} else {
+			stats.Cluster = clusterStats
+			return nil
+		}
+	})
+
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
