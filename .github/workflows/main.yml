@@ -14,7 +14,7 @@ jobs:
         esVersion:
           - 20.10.5-buster-slim
           - 21.10.2-buster-slim
-          - 22.6.0-buster-slim
+          - 22.10.0-buster-slim
 
     name: tests on ES ${{ matrix.esVersion }}
 
