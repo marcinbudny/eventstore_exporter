@@ -40,7 +40,6 @@ func Test_BasicMetrics(t *testing.T) {
 }
 
 func Test_EventStoreUp_Up(t *testing.T) {
-
 	es := prepareExporterServer()
 	ts := httptest.NewServer(es.mux)
 	defer ts.Close()

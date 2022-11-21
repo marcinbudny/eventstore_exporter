@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	jp "github.com/buger/jsonparser"
@@ -17,12 +18,23 @@ import (
 )
 
 func getEventstoreHttpClient() *http.Client {
+	return getEventstoreHttpClientWithConfig(nil)
+}
+
+func getEventstoreHttpClientWithConfig(configureClient func(*http.Client)) *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	return &http.Client{
+	client := &http.Client{
 		Transport: tr,
+		Timeout:   time.Second * 10,
 	}
+
+	if configureClient != nil {
+		configureClient(client)
+	}
+
+	return client
 }
 
 func replayParkedMessages(t *testing.T, streamID string, groupName string) {
@@ -44,7 +56,12 @@ func replayParkedMessages(t *testing.T, streamID string, groupName string) {
 	}
 }
 
-func getEsVersion(t *testing.T) client.EventStoreVersion {
+type esInfo struct {
+	version            client.EventStoreVersion
+	projectionsEnabled bool
+}
+
+func getEsInfo(t *testing.T) *esInfo {
 	httpClient := getEventstoreHttpClient()
 
 	eventStoreURL := getEventStoreURL()
@@ -59,7 +76,7 @@ func getEsVersion(t *testing.T) client.EventStoreVersion {
 	}
 
 	if res.StatusCode != 200 {
-		t.Fatal("Unable to get ES version")
+		t.Fatal("Unable to get ES info")
 	}
 
 	buf, err := io.ReadAll(res.Body)
@@ -68,7 +85,11 @@ func getEsVersion(t *testing.T) client.EventStoreVersion {
 	}
 
 	versionString, _ := jp.GetString(buf, "esVersion")
-	return client.EventStoreVersion(versionString)
+	projectionsEnabled, _ := jp.GetBoolean(buf, "features", "projections")
+	return &esInfo{
+		version:            client.EventStoreVersion(versionString),
+		projectionsEnabled: projectionsEnabled,
+	}
 }
 
 func getEventStoreURL() string {

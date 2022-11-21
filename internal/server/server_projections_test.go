@@ -2,12 +2,11 @@ package server
 
 import (
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
 func Test_ProjectionMetrics(t *testing.T) {
-	if !shouldRunProjectionsTest() {
+	if !shouldRunProjectionsTest(t) {
 		t.Log("Skipping projection metrics")
 		return
 	}
@@ -23,7 +22,6 @@ func Test_ProjectionMetrics(t *testing.T) {
 	assertHasMetric(t, metrics, "eventstore_projection_events_processed_after_restart_total", "counter")
 }
 
-func shouldRunProjectionsTest() bool {
-	_, run := os.LookupEnv("TEST_PROJECTION_METRICS")
-	return run
+func shouldRunProjectionsTest(t *testing.T) bool {
+	return getEsInfo(t).projectionsEnabled
 }

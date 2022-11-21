@@ -13,7 +13,7 @@ jobs:
       matrix:
         esVersion:
           - 20.10.5-buster-slim
-          - 21.10.2-buster-slim
+          - 21.10.8-buster-slim
           - 22.10.0-buster-slim
 
     name: tests on ES ${{ matrix.esVersion }}
@@ -39,9 +39,6 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: run-tests
-        env:
-          TEST_EVENTSTORE_URL: http://eventstore:2113
-          TEST_PROJECTION_METRICS: '1'
         run: go test ./...
 
   docker-build:
