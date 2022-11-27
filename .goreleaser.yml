@@ -3,13 +3,16 @@ builds:
       - CGO_ENABLED=0
     goarch:
       - amd64
+      - arm64
     goos:
       - linux
       - windows
+      - darwin
 archives:
   - replacements:
       linux: Linux
       windows: Windows
+      darwin: macOS
       386: i386
       amd64: x86_64
     files:

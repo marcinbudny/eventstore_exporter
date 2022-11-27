@@ -52,3 +52,4 @@ jobs:
       - uses: docker/build-push-action@v3
         with:
           push: false
+          platforms: linux/amd64,linux/arm64
