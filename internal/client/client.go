@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -40,13 +41,10 @@ func New(config *config.Config) *EventStoreStatsClient {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		esClient.httpClient = http.Client{
-			Timeout:   config.Timeout,
 			Transport: tr,
 		}
 	} else {
-		esClient.httpClient = http.Client{
-			Timeout: config.Timeout,
-		}
+		esClient.httpClient = http.Client{}
 	}
 
 	return esClient
@@ -81,14 +79,14 @@ func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
 	return esdb.NewClient(esConfig)
 }
 
-func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
+func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, error) {
 	// TODO: support cancellation on error
 	group := &errgroup.Group{}
 
 	stats := &Stats{}
 
 	group.Go(func() error {
-		if esVersion, err := client.getEsVersion(); err != nil {
+		if esVersion, err := client.getEsVersion(ctx); err != nil {
 			return err
 		} else {
 			stats.EsVersion = esVersion
@@ -97,7 +95,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	})
 
 	group.Go(func() error {
-		if serverStats, err := client.getServerStats(); err != nil {
+		if serverStats, err := client.getServerStats(ctx); err != nil {
 			return err
 		} else {
 			stats.Process = serverStats.process
@@ -110,7 +108,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	})
 
 	group.Go(func() error {
-		if projectionStats, err := client.getProjectionStats(); err != nil {
+		if projectionStats, err := client.getProjectionStats(ctx); err != nil {
 			return err
 		} else {
 			stats.Projections = projectionStats
@@ -119,7 +117,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	})
 
 	group.Go(func() error {
-		if subscriptionStats, err := client.getSubscriptionStats(); err != nil {
+		if subscriptionStats, err := client.getSubscriptionStats(ctx); err != nil {
 			return err
 		} else {
 			stats.Subscriptions = subscriptionStats
@@ -128,7 +126,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	})
 
 	group.Go(func() error {
-		if streamStats, err := client.getStreamStats(); err != nil {
+		if streamStats, err := client.getStreamStats(ctx); err != nil {
 			return err
 		} else {
 			stats.Streams = streamStats
@@ -137,7 +135,7 @@ func (client *EventStoreStatsClient) GetStats() (*Stats, error) {
 	})
 
 	group.Go(func() error {
-		if clusterStats, err := client.getClusterStats(); err != nil {
+		if clusterStats, err := client.getClusterStats(ctx); err != nil {
 			return err
 		} else {
 			stats.Cluster = clusterStats

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	jp "github.com/buger/jsonparser"
@@ -32,12 +31,12 @@ func getInt(json []byte, keys ...string) int64 {
 	return value
 }
 
-func (client *EventStoreStatsClient) esHttpGet(path string, acceptNotFound bool) (result []byte, err error) {
+func (client *EventStoreStatsClient) esHttpGet(ctx context.Context, path string, acceptNotFound bool) (result []byte, err error) {
 	url := client.config.EventStoreURL + path
 
 	log.WithField("url", url).Debug("GET request to EventStore")
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if client.config.EventStoreUser != "" && client.config.EventStorePassword != "" {
 		req.SetBasicAuth(client.config.EventStoreUser, client.config.EventStorePassword)
 	}
@@ -64,10 +63,7 @@ func (client *EventStoreStatsClient) esHttpGet(path string, acceptNotFound bool)
 	return buf, nil
 }
 
-func readSingleEvent(grpcClient *esdb.Client, stream string, options esdb.ReadStreamOptions, timeout time.Duration) (*esdb.ResolvedEvent, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
+func readSingleEvent(ctx context.Context, grpcClient *esdb.Client, stream string, options esdb.ReadStreamOptions) (*esdb.ResolvedEvent, error) {
 	read, err := grpcClient.ReadStream(ctx, stream, options, 1)
 	if err != nil {
 		return nil, err
@@ -82,10 +78,7 @@ func readSingleEvent(grpcClient *esdb.Client, stream string, options esdb.ReadSt
 	return event, nil
 }
 
-func readSingleEventFromAll(grpcClient *esdb.Client, options esdb.ReadAllOptions, timeout time.Duration) (*esdb.ResolvedEvent, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
+func readSingleEventFromAll(ctx context.Context, grpcClient *esdb.Client, options esdb.ReadAllOptions) (*esdb.ResolvedEvent, error) {
 	read, err := grpcClient.ReadAll(ctx, options, 1)
 	if err != nil {
 		return nil, err

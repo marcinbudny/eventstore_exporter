@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"strings"
 
 	jp "github.com/buger/jsonparser"
@@ -15,8 +16,8 @@ type ProjectionStats struct {
 	EventsProcessedAfterRestart int64
 }
 
-func (client *EventStoreStatsClient) getProjectionStats() ([]ProjectionStats, error) {
-	if projectionsJson, err := client.esHttpGet("/projections/all-non-transient", true); err == nil {
+func (client *EventStoreStatsClient) getProjectionStats(ctx context.Context) ([]ProjectionStats, error) {
+	if projectionsJson, err := client.esHttpGet(ctx, "/projections/all-non-transient", true); err == nil {
 		return getProjectionStats(projectionsJson), nil
 	} else {
 		return nil, err

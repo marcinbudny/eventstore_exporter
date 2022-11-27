@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/marcinbudny/eventstore_exporter)](https://goreportcard.com/report/github.com/marcinbudny/eventstore_exporter)
 [![CI](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml/badge.svg)](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml)
 
-EventStoreDB (https://eventstore.com/eventstoredb/) metrics Prometheus exporter.
+EventStoreDB (<https://eventstore.com/eventstoredb/>) metrics Prometheus exporter.
 
 ## Installation
 
@@ -49,15 +49,15 @@ eventstore_exporter \
 
 ### Supported EventStoreDB versions
 
--   20.10 LTS
--   21.10 LTS
--   22.10 LTS
+- 20.10 LTS
+- 21.10 LTS
+- 22.10 LTS
 
 Other versions may also work but are not tested.
 
 ### Unsupported versions
 
--   5.0 (last supported in exporter version v0.10.4)
+- 5.0 (last supported in exporter version v0.10.4)
 
 ## Configuration
 
@@ -65,13 +65,13 @@ The exporter can be configured with command line arguments, environment variable
 
 | Flag                           | ENV variable                 | Default               | Meaning                                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------------ | ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| --config                       |                              |                       | Path to config file (optional)                                                                                                                                                                                                                                                                                                                                            |
-| --eventstore-url               | EVENTSTORE_URL               | http://localhost:2113 | EventStoreDB HTTP endpoint                                                                                                                                                                                                                                                                                                                                                |
+| --config                        |                              |                       | Path to config file (optional)                                                                                                                                                                                                                                                                                                                                            |
+| --eventstore-url               | EVENTSTORE_URL               | <http://localhost:2113> | EventStoreDB HTTP endpoint                                                                                                                                                                                                                                                                                                                                                |
 | --eventstore-user              | EVENTSTORE_USER              | (empty)               | EventStoreDB user (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                              |
 | --eventstore-password          | EVENTSTORE_PASSWORD          | (empty)               | EventStoreDB password (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                          |
 | --cluster-mode                 | CLUSTER_MODE                 | cluster               | Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster node. This settings decides whether gossip stats endpoint is queried. **Note:** Starting with ES 21.2, the gossip endpoint responds to queries even for single node installation. So if using this version, you can ignore this setting and leave it at default value. |
 | --port                         | PORT                         | 9448                  | Port to expose scrape endpoint on                                                                                                                                                                                                                                                                                                                                         |
-| --timeout                      | TIMEOUT                      | 10s                   | Timeout when calling EventStore                                                                                                                                                                                                                                                                                                                                           |
+| --timeout                      | TIMEOUT                      | 10s                   | Timeout for the scrape operation                                                                                                                                                                                                                                                                                                                                           |
 | --verbose                      | VERBOSE                      | false                 | Enable verbose logging                                                                                                                                                                                                                                                                                                                                                    |
 | --insecure-skip-verify         | INSECURE_SKIP_VERIFY         | false                 | Skip TLS certificate verification for EventStore HTTP client                                                                                                                                                                                                                                                                                                              |
 | --enable-parked-messages-stats | ENABLE_PARKED_MESSAGES_STATS | false                 | Enable parked messages stats scraping. **Note:** for ES 20.10+ you need to enable Atom Pub over HTTP in EventStoreDB to get subscriptions stats. For ES 21.2+, number of parked messages can be extracted without enabling AtomPub, but not the age of the oldest message.                                                                                                |
@@ -80,7 +80,7 @@ The exporter can be configured with command line arguments, environment variable
 
 Sample configuration file
 
-```
+```text
 eventstore-url=http://localhost:2113
 port=8888
 verbose
@@ -102,7 +102,7 @@ Can be found [here](https://grafana.com/dashboards/7673)
 
 Let me know if there is a metric you would like to be added.
 
-```
+```text
 # HELP eventstore_cluster_member_alive If 1, cluster member is alive, as seen from current cluster member
 # TYPE eventstore_cluster_member_alive gauge
 eventstore_cluster_member_alive{member="172.16.1.11:2113"} 1

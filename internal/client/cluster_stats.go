@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	jp "github.com/buger/jsonparser"
@@ -26,15 +27,15 @@ type ClusterStats struct {
 	Members               []MemberStats
 }
 
-func (client *EventStoreStatsClient) getClusterStats() (stats *ClusterStats, err error) {
+func (client *EventStoreStatsClient) getClusterStats(ctx context.Context) (stats *ClusterStats, err error) {
 	if client.config.IsInClusterMode() {
 
-		infoJson, err := client.esHttpGet("/info", false)
+		infoJson, err := client.esHttpGet(ctx, "/info", false)
 		if err != nil {
 			return nil, err
 		}
 
-		gossipJson, err := client.esHttpGet("/gossip", false)
+		gossipJson, err := client.esHttpGet(ctx, "/gossip", false)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +67,7 @@ func getClusterMemberType(infoJson []byte) ClusterMemberType {
 }
 
 func getMemberStats(gossipJson []byte) []MemberStats {
-    var members []MemberStats
+	var members []MemberStats
 
 	_, _ = jp.ArrayEach(gossipJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
 		ip := getString(jsonValue, "httpEndPointIp")

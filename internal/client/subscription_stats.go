@@ -28,8 +28,8 @@ type SubscriptionStats struct {
 	OldestParkedMessageAgeInSeconds float64
 }
 
-func (client *EventStoreStatsClient) getSubscriptionStats() ([]SubscriptionStats, error) {
-	subscriptionsJson, err := client.esHttpGet("/subscriptions", false)
+func (client *EventStoreStatsClient) getSubscriptionStats(ctx context.Context) ([]SubscriptionStats, error) {
+	subscriptionsJson, err := client.esHttpGet(ctx, "/subscriptions", false)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (client *EventStoreStatsClient) getSubscriptionStats() ([]SubscriptionStats
 	subscriptions := getSubscriptions(subscriptionsJson)
 
 	if client.config.EnableParkedMessagesStats {
-		client.addParkedMessagesStats(subscriptions)
+		client.addParkedMessagesStats(ctx, subscriptions)
 	} else {
 		markParkedMessageStatsAsUnavailable(subscriptions)
 	}
@@ -94,7 +94,7 @@ func getSubscriptions(subscriptionsJson []byte) []SubscriptionStats {
 	return subscriptions
 }
 
-func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []SubscriptionStats) {
+func (client *EventStoreStatsClient) addParkedMessagesStats(ctx context.Context, subscriptions []SubscriptionStats) {
 	if len(subscriptions) == 0 {
 		return
 	}
@@ -118,13 +118,13 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 
 			subscription.OldestParkedMessageAgeInSeconds = -1
 
-			parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(grpcClient, subscription.EventStreamID, subscription.GroupName, client.config.Timeout)
+			parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(ctx, grpcClient, subscription.EventStreamID, subscription.GroupName)
 
 			if err != nil || !parkedMessageFound {
 				return
 			}
 
-			truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(grpcClient, subscription.EventStreamID, subscription.GroupName, client.config.Timeout)
+			truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(ctx, grpcClient, subscription.EventStreamID, subscription.GroupName)
 
 			if err != nil {
 				return
@@ -135,7 +135,7 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 			var oldestParkedMessageAgeInSeconds float64 = 0
 			if totalNumberOfParkedMessages > 0 {
 				oldestMessagePosition := lastEventNumber + 1 - totalNumberOfParkedMessages
-				oldestParkedMessageAgeInSeconds, _ = getOldestParkedMessageAgeInSeconds(grpcClient, subscription.EventStreamID, subscription.GroupName, oldestMessagePosition, client.config.Timeout)
+				oldestParkedMessageAgeInSeconds, _ = getOldestParkedMessageAgeInSeconds(ctx, grpcClient, subscription.EventStreamID, subscription.GroupName, oldestMessagePosition)
 			}
 
 			subscription.TotalNumberOfParkedMessages = int64(totalNumberOfParkedMessages)
@@ -147,8 +147,8 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(subscriptions []Subs
 	wg.Wait()
 }
 
-func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID string, groupName string, oldestMessagePosition uint64, timeout time.Duration) (float64, error) {
-	event, err := readSingleEvent(grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)}, timeout)
+func getOldestParkedMessageAgeInSeconds(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string, oldestMessagePosition uint64) (float64, error) {
+	event, err := readSingleEvent(ctx, grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)})
 
 	if err == io.EOF {
 		return -1, nil
@@ -169,8 +169,8 @@ func getOldestParkedMessageAgeInSeconds(grpcClient *esdb.Client, eventStreamID s
 	return age, nil
 }
 
-func getParkedMessagesLastEventNumber(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (bool, uint64, error) {
-	event, err := readSingleEvent(grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
+func getParkedMessagesLastEventNumber(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string) (bool, uint64, error) {
+	event, err := readSingleEvent(ctx, grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}})
 
 	if err == io.EOF {
 		return false, 0, nil
@@ -186,10 +186,7 @@ func getParkedMessagesLastEventNumber(grpcClient *esdb.Client, eventStreamID str
 	return true, event.Event.EventNumber, nil
 }
 
-func getParkedMessagesTruncateBeforeValue(grpcClient *esdb.Client, eventStreamID string, groupName string, timeout time.Duration) (uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
+func getParkedMessagesTruncateBeforeValue(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string) (uint64, error) {
 	if meta, err := grpcClient.GetStreamMetadata(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{}); err == nil {
 		return *meta.TruncateBefore(), nil
 	} else if strings.Contains(err.Error(), "not found") {

@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"context"
+
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	"github.com/prometheus/client_golang/prometheus"
@@ -149,7 +151,12 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Running scrape")
 
-	if stats, err := c.client.GetStats(); err != nil {
+	// context is not passed to the collector, so we need to create a new one
+	// https://groups.google.com/g/prometheus-developers/c/a8k4CXhGdPI
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.Timeout)
+	defer cancel()
+
+	if stats, err := c.client.GetStats(ctx); err != nil {
 		log.WithError(err).Error("Error while getting data from EventStore")
 
 		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)

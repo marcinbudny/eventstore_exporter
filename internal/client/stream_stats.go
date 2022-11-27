@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -14,15 +15,15 @@ type StreamStats struct {
 	LastEventNumber    int64
 }
 
-func (client *EventStoreStatsClient) getStreamStats() ([]StreamStats, error) {
-	if streamStats, err := getStreamStatsFromEachStream(client); err == nil {
+func (client *EventStoreStatsClient) getStreamStats(ctx context.Context) ([]StreamStats, error) {
+	if streamStats, err := getStreamStatsFromEachStream(ctx, client); err == nil {
 		return streamStats, nil
 	} else {
 		return nil, err
 	}
 }
 
-func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats, error) {
+func getStreamStatsFromEachStream(ctx context.Context, client *EventStoreStatsClient) ([]StreamStats, error) {
 	if len(client.config.Streams) == 0 {
 		return make([]StreamStats, 0), nil
 	}
@@ -43,7 +44,7 @@ func getStreamStatsFromEachStream(client *EventStoreStatsClient) ([]StreamStats,
 			defer wg.Done()
 
 			log.WithField("stream", stream).Debug("Getting stream stats")
-			if stats, getErr := getSingleStreamStats(grpcClient, stream, client.config.Timeout); getErr == nil {
+			if stats, getErr := getSingleStreamStats(ctx, grpcClient, stream, client.config.Timeout); getErr == nil {
 				streamStats <- stats
 			}
 
@@ -65,16 +66,16 @@ func toSlice(streamStats <-chan StreamStats) []StreamStats {
 	return streamStatsSlice
 }
 
-func getSingleStreamStats(grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
+func getSingleStreamStats(ctx context.Context, grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
 	if stream == "$all" {
-		return getAllStreamStats(grpcClient, timeout)
+		return getAllStreamStats(ctx, grpcClient, timeout)
 	}
 
-	return getRegularStreamStats(grpcClient, stream, timeout)
+	return getRegularStreamStats(ctx, grpcClient, stream, timeout)
 }
 
-func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamStats, error) {
-	event, err := readSingleEventFromAll(grpcClient, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
+func getAllStreamStats(ctx context.Context, grpcClient *esdb.Client, timeout time.Duration) (StreamStats, error) {
+	event, err := readSingleEventFromAll(ctx, grpcClient, esdb.ReadAllOptions{Direction: esdb.Backwards, From: esdb.End{}})
 
 	if err != nil {
 		log.WithError(err).Error("Error when reading last event from $all stream")
@@ -90,9 +91,9 @@ func getAllStreamStats(grpcClient *esdb.Client, timeout time.Duration) (StreamSt
 
 }
 
-func getRegularStreamStats(grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
+func getRegularStreamStats(ctx context.Context, grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {
 
-	event, err := readSingleEvent(grpcClient, stream, esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}}, timeout)
+	event, err := readSingleEvent(ctx, grpcClient, stream, esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}})
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
 			"streamId": stream,

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+
 	"github.com/hashicorp/go-version"
 )
 
@@ -11,8 +13,8 @@ type getEsVersionResult struct {
 	err       error
 }
 
-func (client *EventStoreStatsClient) getEsVersion() (EventStoreVersion, error) {
-	if infoJson, err := client.esHttpGet("/info", false); err == nil {
+func (client *EventStoreStatsClient) getEsVersion(ctx context.Context) (EventStoreVersion, error) {
+	if infoJson, err := client.esHttpGet(ctx, "/info", false); err == nil {
 		return EventStoreVersion(getString(infoJson, "esVersion")), nil
 	} else {
 		return "", err

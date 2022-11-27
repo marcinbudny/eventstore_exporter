@@ -1,6 +1,10 @@
 package client
 
-import jp "github.com/buger/jsonparser"
+import (
+	"context"
+
+	jp "github.com/buger/jsonparser"
+)
 
 type getServerStatsResult struct {
 	process  *ProcessStats
@@ -40,8 +44,8 @@ type DriveStats struct {
 	AvailableBytes int64
 }
 
-func (client *EventStoreStatsClient) getServerStats() (*getServerStatsResult, error) {
-	if serverJson, err := client.esHttpGet("/stats", false); err == nil {
+func (client *EventStoreStatsClient) getServerStats(ctx context.Context) (*getServerStatsResult, error) {
+	if serverJson, err := client.esHttpGet(ctx, "/stats", false); err == nil {
 		return &getServerStatsResult{
 			process: &ProcessStats{
 				Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,
