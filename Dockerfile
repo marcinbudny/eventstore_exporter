@@ -1,8 +1,8 @@
-FROM golang:1.19-alpine as build
+FROM golang:1.19.3-alpine as build
 
 WORKDIR /go/src/github.com/marcinbudny/eventstore_exporter
 COPY . ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -o app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -o app
 
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
