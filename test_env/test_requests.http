@@ -1,9 +1,14 @@
-@url = http://localhost:2113
+@url = https://localhost:2113
 @auth = admin:changeit
 
 ###
 
 GET {{url}}/stats
+Authorization: Basic {{auth}}
+
+###
+
+GET {{url}}/stats/tcp
 Authorization: Basic {{auth}}
 
 ###

@@ -20,16 +20,17 @@ type EventStoreStatsClient struct {
 }
 
 type Stats struct {
-	EsVersion     EventStoreVersion
-	Process       *ProcessStats
-	DiskIo        *DiskIoStats
-	Tcp           *TcpStats
-	Cluster       *ClusterStats
-	Queues        []QueueStats
-	Drives        []DriveStats
-	Projections   []ProjectionStats
-	Subscriptions []SubscriptionStats
-	Streams       []StreamStats
+	EsVersion      EventStoreVersion
+	Process        *ProcessStats
+	DiskIo         *DiskIoStats
+	Tcp            *TcpStats
+	Cluster        *ClusterStats
+	Queues         []QueueStats
+	Drives         []DriveStats
+	Projections    []ProjectionStats
+	Subscriptions  []SubscriptionStats
+	Streams        []StreamStats
+	TcpConnections []TcpConnectionStats
 }
 
 func New(config *config.Config) *EventStoreStatsClient {
@@ -139,6 +140,15 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 			return err
 		} else {
 			stats.Cluster = clusterStats
+			return nil
+		}
+	})
+
+	group.Go(func() error {
+		if tcpConnectionStats, err := client.getTcpConnectionStats(ctx); err != nil {
+			return err
+		} else {
+			stats.TcpConnections = tcpConnectionStats
 			return nil
 		}
 	})

@@ -22,6 +22,7 @@ type Config struct {
 	EnableParkedMessagesStats bool
 	Streams                   []string
 	StreamsSeparator          string
+	EnableTcpConnectionStats  bool
 }
 
 func Load(args []string, suppressOutput bool) (*Config, error) {
@@ -40,6 +41,7 @@ func Load(args []string, suppressOutput bool) (*Config, error) {
 	fs.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
 	streamsString := fs.String("streams", "", "List of streams to get metrics for")
 	fs.StringVar(&config.StreamsSeparator, "streams-separator", ",", "Separator for streams list (default: ',')")
+	fs.BoolVar(&config.EnableTcpConnectionStats, "enable-tcp-connection-stats", false, "Enable TCP connection stats scraping")
 
 	if suppressOutput {
 		fs.Usage = func() {}

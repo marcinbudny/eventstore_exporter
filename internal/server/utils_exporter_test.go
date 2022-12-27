@@ -29,6 +29,7 @@ func prepareExporterServerWithConfig(updateConfig func(*config.Config)) *Exporte
 		InsecureSkipVerify:        true,
 		Timeout:                   time.Second * 10,
 		EnableParkedMessagesStats: true,
+		EnableTcpConnectionStats:  true,
 	}
 
 	if updateConfig != nil {

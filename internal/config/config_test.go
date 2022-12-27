@@ -32,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 				EnableParkedMessagesStats: false,
 				Streams:                   []string{},
 				StreamsSeparator:          ",",
+				EnableTcpConnectionStats:  false,
 			},
 		},
 		{
@@ -48,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				"-enable-parked-messages-stats=true",
 				"-streams=$all;my-stream;my-other-stream",
 				"-streams-separator=;",
+				"-enable-tcp-connection-stats=true",
 			},
 			expectedConfig: Config{
 				Timeout:                   time.Duration(20 * time.Second),
@@ -61,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				EnableParkedMessagesStats: true,
 				Streams:                   []string{"$all", "my-stream", "my-other-stream"},
 				StreamsSeparator:          ";",
+				EnableTcpConnectionStats:  true,
 			},
 		},
 		{
@@ -123,6 +126,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("ENABLE_PARKED_MESSAGES_STATS", "true")
 	os.Setenv("STREAMS", "$all;my-stream;my-other-stream")
 	os.Setenv("STREAMS_SEPARATOR", ";")
+	os.Setenv("ENABLE_TCP_CONNECTION_STATS", "true")
 
 	expectedConfig := Config{
 		Timeout:                   time.Duration(20 * time.Second),
@@ -136,6 +140,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		EnableParkedMessagesStats: true,
 		Streams:                   []string{"$all", "my-stream", "my-other-stream"},
 		StreamsSeparator:          ";",
+		EnableTcpConnectionStats:  true,
 	}
 
 	if cfg, err := Load([]string{}, true); err == nil {
@@ -164,6 +169,7 @@ func TestLoadConfigFromFile(t *testing.T) {
 		EnableParkedMessagesStats: true,
 		Streams:                   []string{"$all", "my-test-stream", "my-other-stream"},
 		StreamsSeparator:          "|",
+		EnableTcpConnectionStats:  true,
 	}
 
 	if cfg, err := Load(args, true); err == nil {
@@ -187,4 +193,5 @@ func clearEnvironment() {
 	os.Unsetenv("ENABLE_PARKED_MESSAGES_STATS")
 	os.Unsetenv("STREAMS")
 	os.Unsetenv("STREAMS_SEPARATOR")
+	os.Unsetenv("ENABLE_TCP_CONNECTION_STATS")
 }

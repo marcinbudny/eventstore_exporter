@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -61,6 +62,22 @@ func (client *EventStoreStatsClient) esHttpGet(ctx context.Context, path string,
 	}
 
 	return buf, nil
+}
+
+func esHttpGetAndParse[TResponse any](ctx context.Context, client *EventStoreStatsClient, path string, acceptNotFound bool) (TResponse, error) {
+	var response TResponse
+
+	jsonBytes, err := client.esHttpGet(ctx, path, acceptNotFound)
+	if err != nil {
+		return response, err
+	}
+
+	err = json.Unmarshal(jsonBytes, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
 }
 
 func readSingleEvent(ctx context.Context, grpcClient *esdb.Client, stream string, options esdb.ReadStreamOptions) (*esdb.ResolvedEvent, error) {

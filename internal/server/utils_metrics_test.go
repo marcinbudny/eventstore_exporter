@@ -86,6 +86,12 @@ func assertMetric(
 	}
 }
 
+func assertHasNoMetric(t *testing.T, metrics map[string]*dto.MetricFamily, name string) {
+	if _, ok := metrics[name]; ok {
+		t.Errorf("Metric family %s is present but should not be", name)
+	}
+}
+
 func anyValue(*testing.T, float64) {
 }
 

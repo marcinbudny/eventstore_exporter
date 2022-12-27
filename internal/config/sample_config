@@ -9,3 +9,4 @@ cluster-mode=single
 enable-parked-messages-stats=true
 streams=$all|my-test-stream|my-other-stream
 streams-separator=|
+enable-tcp-connection-stats=true
