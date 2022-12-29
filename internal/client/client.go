@@ -20,13 +20,9 @@ type EventStoreStatsClient struct {
 }
 
 type Stats struct {
-	EsVersion      EventStoreVersion
-	Process        *ProcessStats
-	DiskIo         *DiskIoStats
-	Tcp            *TcpStats
-	Cluster        *ClusterStats
-	Queues         []QueueStats
-	Drives         []DriveStats
+	Info           *EsInfo
+	Server         *ServerStats
+	ClusterMembers []MemberStats
 	Projections    []ProjectionStats
 	Subscriptions  []SubscriptionStats
 	Streams        []StreamStats
@@ -87,30 +83,26 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 	stats := &Stats{}
 
 	group.Go(func() error {
-		if esVersion, err := client.getEsVersion(ctx); err != nil {
-			return err
+		if info, err := client.GetEsInfo(ctx); err != nil {
+			return fmt.Errorf("error while getting ES Info: %w", err)
 		} else {
-			stats.EsVersion = esVersion
+			stats.Info = info
 			return nil
 		}
 	})
 
 	group.Go(func() error {
 		if serverStats, err := client.getServerStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting server stats: %w", err)
 		} else {
-			stats.Process = serverStats.process
-			stats.DiskIo = serverStats.diskIo
-			stats.Tcp = serverStats.tcpStats
-			stats.Queues = serverStats.queues
-			stats.Drives = serverStats.drives
+			stats.Server = serverStats
 			return nil
 		}
 	})
 
 	group.Go(func() error {
 		if projectionStats, err := client.getProjectionStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting projection stats: %w", err)
 		} else {
 			stats.Projections = projectionStats
 			return nil
@@ -119,7 +111,7 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 
 	group.Go(func() error {
 		if subscriptionStats, err := client.getSubscriptionStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting subscription stats: %w", err)
 		} else {
 			stats.Subscriptions = subscriptionStats
 			return nil
@@ -128,7 +120,7 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 
 	group.Go(func() error {
 		if streamStats, err := client.getStreamStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting stream stats: %w", err)
 		} else {
 			stats.Streams = streamStats
 			return nil
@@ -137,16 +129,16 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 
 	group.Go(func() error {
 		if clusterStats, err := client.getClusterStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting cluster stats: %w", err)
 		} else {
-			stats.Cluster = clusterStats
+			stats.ClusterMembers = clusterStats
 			return nil
 		}
 	})
 
 	group.Go(func() error {
 		if tcpConnectionStats, err := client.getTcpConnectionStats(ctx); err != nil {
-			return err
+			return fmt.Errorf("error while getting tcp connection stats: %w", err)
 		} else {
 			stats.TcpConnections = tcpConnectionStats
 			return nil

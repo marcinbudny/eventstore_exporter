@@ -8,29 +8,8 @@ import (
 	"net/http"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
-	jp "github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
-
-func getFloat(json []byte, keys ...string) float64 {
-	value, _ := jp.GetFloat(json, keys...)
-	return value
-}
-
-func getString(json []byte, keys ...string) string {
-	value, _ := jp.GetString(json, keys...)
-	return value
-}
-
-func getBoolean(json []byte, keys ...string) bool {
-	value, _ := jp.GetBoolean(json, keys...)
-	return value
-}
-
-func getInt(json []byte, keys ...string) int64 {
-	value, _ := jp.GetInt(json, keys...)
-	return value
-}
 
 func (client *EventStoreStatsClient) esHttpGet(ctx context.Context, path string, acceptNotFound bool) (result []byte, err error) {
 	url := client.config.EventStoreURL + path
@@ -68,7 +47,7 @@ func esHttpGetAndParse[TResponse any](ctx context.Context, client *EventStoreSta
 	var response TResponse
 
 	jsonBytes, err := client.esHttpGet(ctx, path, acceptNotFound)
-	if err != nil {
+	if err != nil || jsonBytes == nil {
 		return response, err
 	}
 

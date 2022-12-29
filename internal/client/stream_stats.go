@@ -34,36 +34,26 @@ func getStreamStatsFromEachStream(ctx context.Context, client *EventStoreStatsCl
 	}
 	defer grpcClient.Close()
 
-	streamStats := make(chan StreamStats, len(client.config.Streams))
+	streamStats := make([]StreamStats, len(client.config.Streams))
 	var wg sync.WaitGroup
 
-	for _, stream := range client.config.Streams {
+	for i, stream := range client.config.Streams {
 		wg.Add(1)
 
-		go func(stream string) {
+		go func(stream string, idx int) {
 			defer wg.Done()
 
 			log.WithField("stream", stream).Debug("Getting stream stats")
 			if stats, getErr := getSingleStreamStats(ctx, grpcClient, stream, client.config.Timeout); getErr == nil {
-				streamStats <- stats
+				streamStats[idx] = stats
 			}
 
-		}(stream)
+		}(stream, i)
 	}
 
 	wg.Wait()
-	close(streamStats)
 
-	return toSlice(streamStats), nil
-}
-
-func toSlice(streamStats <-chan StreamStats) []StreamStats {
-	streamStatsSlice := make([]StreamStats, 0)
-	for s := range streamStats {
-		streamStatsSlice = append(streamStatsSlice, s)
-	}
-
-	return streamStatsSlice
+	return streamStats, nil
 }
 
 func getSingleStreamStats(ctx context.Context, grpcClient *esdb.Client, stream string, timeout time.Duration) (StreamStats, error) {

@@ -2,82 +2,34 @@ package client
 
 import (
 	"context"
-	"fmt"
-
-	jp "github.com/buger/jsonparser"
 )
 
-type ClusterMemberType int
+type gossipEnvelope struct {
+	Members []MemberStats `json:"members"`
+}
 
 const (
-	Leader ClusterMemberType = iota
-	Follower
-	ReadOnlyReplica
-	Clone
-	Unknown
+	MemberStateLeader          string = "leader"
+	MemberStateFollower        string = "follower"
+	MemberStateReadOnlyReplica string = "readonlyreplica"
+	MemberStateClone           string = "clone"
 )
 
 type MemberStats struct {
-	MemberName string
-	IsAlive    bool
+	HttpEndpointIp   string `json:"httpEndPointIp"`
+	HttpEndpointPort int    `json:"httpEndPointPort"`
+	IsAlive          bool
 }
 
-type ClusterStats struct {
-	CurrentNodeMemberType ClusterMemberType
-	Members               []MemberStats
-}
-
-func (client *EventStoreStatsClient) getClusterStats(ctx context.Context) (stats *ClusterStats, err error) {
+func (client *EventStoreStatsClient) getClusterStats(ctx context.Context) (stats []MemberStats, err error) {
 	if client.config.IsInClusterMode() {
 
-		infoJson, err := client.esHttpGet(ctx, "/info", false)
-		if err != nil {
+		if gossip, err := esHttpGetAndParse[gossipEnvelope](ctx, client, "/gossip", false); err != nil {
 			return nil, err
+		} else {
+			return gossip.Members, nil
 		}
-
-		gossipJson, err := client.esHttpGet(ctx, "/gossip", false)
-		if err != nil {
-			return nil, err
-		}
-
-		return &ClusterStats{
-			CurrentNodeMemberType: getClusterMemberType(infoJson),
-			Members:               getMemberStats(gossipJson),
-		}, nil
-
-	} else {
-		return &ClusterStats{}, nil
 	}
-}
 
-func getClusterMemberType(infoJson []byte) ClusterMemberType {
-	memberTypeString := getString(infoJson, "state")
-	switch memberTypeString {
-	case "leader":
-		return Leader
-	case "follower":
-		return Follower
-	case "readonlyreplica":
-		return ReadOnlyReplica
-	case "clone":
-		return Clone
-	default:
-		return Unknown
-	}
-}
-
-func getMemberStats(gossipJson []byte) []MemberStats {
-	var members []MemberStats
-
-	_, _ = jp.ArrayEach(gossipJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
-		ip := getString(jsonValue, "httpEndPointIp")
-		port := getInt(jsonValue, "httpEndPointPort")
-
-		members = append(members, MemberStats{
-			MemberName: fmt.Sprintf("%s:%d", ip, port),
-			IsAlive:    getBoolean(jsonValue, "isAlive"),
-		})
-	}, "members")
-
-	return members
+	return []MemberStats{}, nil
 }

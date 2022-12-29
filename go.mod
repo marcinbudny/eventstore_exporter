@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/EventStore/EventStore-Client-Go/v3 v3.0.0
-	github.com/buger/jsonparser v1.1.1
 	github.com/gofrs/uuid v4.3.0+incompatible
 	github.com/google/go-cmp v0.5.8
 	github.com/hashicorp/go-version v1.6.0

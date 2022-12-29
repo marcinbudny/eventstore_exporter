@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,9 +11,9 @@ import (
 	"time"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
-	jp "github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
+	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
 func getEventstoreHttpClient() *http.Client {
@@ -56,40 +55,22 @@ func replayParkedMessages(t *testing.T, streamID string, groupName string) {
 	}
 }
 
-type esInfo struct {
-	version            client.EventStoreVersion
-	projectionsEnabled bool
-}
+func getEsInfo(t *testing.T) *client.EsInfo {
+	c := client.New(&config.Config{
+		EventStoreURL:      getEventStoreURL(),
+		EventStoreUser:     "admin",
+		EventStorePassword: "changeit",
+		InsecureSkipVerify: true,
+	})
 
-func getEsInfo(t *testing.T) *esInfo {
-	httpClient := getEventstoreHttpClient()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
-	eventStoreURL := getEventStoreURL()
-
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/info", eventStoreURL), nil)
-	req.SetBasicAuth("admin", "changeit")
-	req.Header.Add("Accept", "application/json")
-	res, errPost := httpClient.Do(req)
-
-	if errPost != nil {
-		t.Fatal(errPost)
-	}
-
-	if res.StatusCode != 200 {
-		t.Fatal("Unable to get ES info")
-	}
-
-	buf, err := io.ReadAll(res.Body)
+	esInfo, err := c.GetEsInfo(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	versionString, _ := jp.GetString(buf, "esVersion")
-	projectionsEnabled, _ := jp.GetBoolean(buf, "features", "projections")
-	return &esInfo{
-		version:            client.EventStoreVersion(versionString),
-		projectionsEnabled: projectionsEnabled,
-	}
+	return esInfo
 }
 
 func getEventStoreURL() string {

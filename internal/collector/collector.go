@@ -2,7 +2,9 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
@@ -188,24 +190,24 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 func (c *Collector) collectFromStats(ch chan<- prometheus.Metric, stats *client.Stats) {
 	c.collectFromServerStats(ch, stats)
 	c.collectFromTcpConnectionStats(ch, stats.TcpConnections)
-	c.collectFromQueueStats(ch, stats.Queues)
-	c.collectFromDriveStats(ch, stats.Drives)
+	c.collectFromQueueStats(ch, stats.Server.Es.Queues)
+	c.collectFromDriveStats(ch, stats.Server.System.Drives)
 	c.collectFromProjectionStats(ch, stats.Projections)
 	c.collectFromSubscriptionStats(ch, stats.Subscriptions)
 	c.collectFromStreamStats(ch, stats.Streams)
-	c.collectFromClusterStats(ch, stats.Cluster)
+	c.collectFromClusterStats(ch, stats)
 }
 
 func (c *Collector) collectFromServerStats(ch chan<- prometheus.Metric, stats *client.Stats) {
-	ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, stats.Process.Cpu)
-	ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, float64(stats.Process.MemoryBytes))
-	ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, float64(stats.DiskIo.ReadBytes))
-	ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, float64(stats.DiskIo.WrittenBytes))
-	ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, float64(stats.DiskIo.ReadOps))
-	ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, float64(stats.DiskIo.WriteOps))
-	ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, float64(stats.Tcp.SentBytes))
-	ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, float64(stats.Tcp.ReceivedBytes))
-	ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, float64(stats.Tcp.Connections))
+	ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, stats.Server.Process.Cpu/100.0) // scale to 0-[num of cores]
+	ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, float64(stats.Server.Process.MemoryBytes))
+	ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.ReadBytes))
+	ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.WrittenBytes))
+	ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.ReadOps))
+	ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.WriteOps))
+	ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.SentBytes))
+	ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.ReceivedBytes))
+	ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.Connections))
 }
 
 func (c *Collector) collectFromTcpConnectionStats(ch chan<- prometheus.Metric, stats []client.TcpConnectionStats) {
@@ -226,17 +228,17 @@ func (c *Collector) collectFromTcpConnectionStats(ch chan<- prometheus.Metric, s
 	}
 }
 
-func (c *Collector) collectFromQueueStats(ch chan<- prometheus.Metric, stats []client.QueueStats) {
+func (c *Collector) collectFromQueueStats(ch chan<- prometheus.Metric, stats map[string]client.QueueStats) {
 	for _, queue := range stats {
-		ch <- prometheus.MustNewConstMetric(c.queueLength, prometheus.GaugeValue, float64(queue.Length), queue.Name)
-		ch <- prometheus.MustNewConstMetric(c.queueItemsProcessed, prometheus.CounterValue, float64(queue.ItemsProcessed), queue.Name)
+		ch <- prometheus.MustNewConstMetric(c.queueLength, prometheus.GaugeValue, float64(queue.Length), queue.QueueName)
+		ch <- prometheus.MustNewConstMetric(c.queueItemsProcessed, prometheus.CounterValue, float64(queue.ItemsProcessed), queue.QueueName)
 	}
 }
 
-func (c *Collector) collectFromDriveStats(ch chan<- prometheus.Metric, stats []client.DriveStats) {
-	for _, drive := range stats {
-		ch <- prometheus.MustNewConstMetric(c.driveTotalBytes, prometheus.GaugeValue, float64(drive.TotalBytes), drive.Name)
-		ch <- prometheus.MustNewConstMetric(c.driveAvailableBytes, prometheus.GaugeValue, float64(drive.AvailableBytes), drive.Name)
+func (c *Collector) collectFromDriveStats(ch chan<- prometheus.Metric, stats map[string]client.DriveStats) {
+	for driveName, drive := range stats {
+		ch <- prometheus.MustNewConstMetric(c.driveTotalBytes, prometheus.GaugeValue, float64(drive.TotalBytes), driveName)
+		ch <- prometheus.MustNewConstMetric(c.driveAvailableBytes, prometheus.GaugeValue, float64(drive.AvailableBytes), driveName)
 	}
 }
 
@@ -245,21 +247,21 @@ func (c *Collector) collectFromProjectionStats(ch chan<- prometheus.Metric, stat
 		running := 0.0
 		stopped := 0.0
 		faulted := 0.0
-		if projection.Running {
+
+		if projection.Status == "Running" {
 			running = 1.0
-		}
-		if projection.Stopped {
+		} else if projection.Status == "Stopped" {
 			stopped = 1.0
-		}
-		if projection.Faulted {
+		} else if strings.Contains(projection.Status, "Faulted") {
 			faulted = 1.0
 		}
-		ch <- prometheus.MustNewConstMetric(c.projectionRunning, prometheus.GaugeValue, running, projection.Name)
-		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, running, projection.Name, "Running")
-		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, stopped, projection.Name, "Stopped")
-		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, faulted, projection.Name, "Faulted")
-		ch <- prometheus.MustNewConstMetric(c.projectionProgress, prometheus.GaugeValue, projection.Progress, projection.Name)
-		ch <- prometheus.MustNewConstMetric(c.projectionEventsProcessedAfterRestart, prometheus.CounterValue, float64(projection.EventsProcessedAfterRestart), projection.Name)
+
+		ch <- prometheus.MustNewConstMetric(c.projectionRunning, prometheus.GaugeValue, running, projection.EffectiveName)
+		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, running, projection.EffectiveName, "Running")
+		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, stopped, projection.EffectiveName, "Stopped")
+		ch <- prometheus.MustNewConstMetric(c.projectionStatus, prometheus.GaugeValue, faulted, projection.EffectiveName, "Faulted")
+		ch <- prometheus.MustNewConstMetric(c.projectionProgress, prometheus.GaugeValue, projection.Progress/100.0, projection.EffectiveName) // scale to 0-1
+		ch <- prometheus.MustNewConstMetric(c.projectionEventsProcessedAfterRestart, prometheus.CounterValue, float64(projection.EventsProcessedAfterRestart), projection.EffectiveName)
 	}
 }
 
@@ -272,8 +274,16 @@ func (c *Collector) collectFromSubscriptionStats(ch chan<- prometheus.Metric, st
 		ch <- prometheus.MustNewConstMetric(c.subscriptionOldestParkedMessage, prometheus.GaugeValue, subscription.OldestParkedMessageAgeInSeconds, subscription.EventStreamID, subscription.GroupName)
 
 		if subscription.EventStreamID == "$all" {
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastCheckpointedEventCommitPosition, prometheus.GaugeValue, float64(subscription.LastCheckpointedEventPosition), subscription.EventStreamID, subscription.GroupName)
-			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventCommitPosition, prometheus.GaugeValue, float64(subscription.LastKnownEventPosition), subscription.EventStreamID, subscription.GroupName)
+			lastCheckpointedEventPosition, _, err := client.EventPosition(subscription.LastCheckpointedEventPosition).ParseCommitPreparePosition()
+			if err != nil {
+				log.WithError(err).Warnf("Error while parsing last checkpointed event position of $all stream subscription group %s", subscription.GroupName)
+			}
+			lastKnownEventPosition, _, err := client.EventPosition(subscription.LastKnownEventPosition).ParseCommitPreparePosition()
+			if err != nil {
+				log.WithError(err).Errorf("Error while parsing last known event position of $all stream subscription group %s", subscription.GroupName)
+			}
+			ch <- prometheus.MustNewConstMetric(c.subscriptionLastCheckpointedEventCommitPosition, prometheus.GaugeValue, float64(lastCheckpointedEventPosition), subscription.EventStreamID, subscription.GroupName)
+			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventCommitPosition, prometheus.GaugeValue, float64(lastKnownEventPosition), subscription.EventStreamID, subscription.GroupName)
 		} else {
 			ch <- prometheus.MustNewConstMetric(c.subscriptionLastProcessedEventNumber, prometheus.GaugeValue, float64(subscription.LastProcessedEventNumber), subscription.EventStreamID, subscription.GroupName)
 			ch <- prometheus.MustNewConstMetric(c.subscriptionLastKnownEventNumber, prometheus.GaugeValue, float64(subscription.LastKnownEventNumber), subscription.EventStreamID, subscription.GroupName)
@@ -292,25 +302,26 @@ func (c *Collector) collectFromStreamStats(ch chan<- prometheus.Metric, stats []
 	}
 }
 
-func (c *Collector) collectFromClusterStats(ch chan<- prometheus.Metric, stats *client.ClusterStats) {
+func (c *Collector) collectFromClusterStats(ch chan<- prometheus.Metric, stats *client.Stats) {
 	if c.config.IsInClusterMode() {
+
 		isLeader := 0.0
-		if stats.CurrentNodeMemberType == client.Leader {
+		if stats.Info.MemberState == client.MemberStateLeader {
 			isLeader = 1.0
 		}
 
 		isFollower := 0.0
-		if stats.CurrentNodeMemberType == client.Follower {
+		if stats.Info.MemberState == client.MemberStateFollower {
 			isFollower = 1.0
 		}
 
 		isReadOnlyReplica := 0.0
-		if stats.CurrentNodeMemberType == client.ReadOnlyReplica {
+		if stats.Info.MemberState == client.MemberStateReadOnlyReplica {
 			isReadOnlyReplica = 1.0
 		}
 
 		isClone := 0.0
-		if stats.CurrentNodeMemberType == client.Clone {
+		if stats.Info.MemberState == client.MemberStateClone {
 			isClone = 1.0
 		}
 
@@ -319,13 +330,15 @@ func (c *Collector) collectFromClusterStats(ch chan<- prometheus.Metric, stats *
 		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, isReadOnlyReplica)
 		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, isClone)
 
-		for _, member := range stats.Members {
+		for _, member := range stats.ClusterMembers {
 			isAlive := 0.0
 			if member.IsAlive {
 				isAlive = 1.0
 			}
 
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberAlive, prometheus.GaugeValue, isAlive, member.MemberName)
+			memberName := fmt.Sprintf("%s:%d", member.HttpEndpointIp, member.HttpEndpointPort)
+
+			ch <- prometheus.MustNewConstMetric(c.clusterMemberAlive, prometheus.GaugeValue, isAlive, memberName)
 		}
 	}
 }

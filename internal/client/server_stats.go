@@ -2,102 +2,58 @@ package client
 
 import (
 	"context"
-
-	jp "github.com/buger/jsonparser"
 )
 
-type getServerStatsResult struct {
-	process  *ProcessStats
-	diskIo   *DiskIoStats
-	tcpStats *TcpStats
-	queues   []QueueStats
-	drives   []DriveStats
+type ServerStats struct {
+	Process ProcessStats `json:"proc"`
+	System  SystemStats  `json:"sys"`
+	Es      EsStats      `json:"es"`
 }
 
 type ProcessStats struct {
-	Cpu         float64
-	MemoryBytes int64
+	Cpu         float64     `json:"cpu"`
+	MemoryBytes int64       `json:"mem"`
+	DiskIo      DiskIoStats `json:"diskIo"`
+	Tcp         TcpStats    `json:"tcp"`
 }
 
 type DiskIoStats struct {
-	ReadBytes    int64
-	WrittenBytes int64
-	ReadOps      int64
-	WriteOps     int64
+	ReadBytes    int64 `json:"readBytes"`
+	WrittenBytes int64 `json:"writtenBytes"`
+	ReadOps      int64 `json:"readOps"`
+	WriteOps     int64 `json:"writeOps"`
 }
 
 type TcpStats struct {
-	SentBytes     int64
-	ReceivedBytes int64
-	Connections   int64
+	SentBytes     int64 `json:"sentBytesTotal"`
+	ReceivedBytes int64 `json:"receivedBytesTotal"`
+	Connections   int64 `json:"connections"`
 }
 
-type QueueStats struct {
-	Name           string
-	Length         int64
-	ItemsProcessed int64
+type SystemStats struct {
+	Drives map[string]DriveStats `json:"drive"`
 }
 
 type DriveStats struct {
-	Name           string
-	TotalBytes     int64
-	AvailableBytes int64
+	TotalBytes     int64 `json:"totalBytes"`
+	AvailableBytes int64 `json:"availableBytes"`
 }
 
-func (client *EventStoreStatsClient) getServerStats(ctx context.Context) (*getServerStatsResult, error) {
-	if serverJson, err := client.esHttpGet(ctx, "/stats", false); err == nil {
-		return &getServerStatsResult{
-			process: &ProcessStats{
-				Cpu:         getFloat(serverJson, "proc", "cpu") / 100.0,
-				MemoryBytes: getInt(serverJson, "proc", "mem"),
-			},
-			diskIo: &DiskIoStats{
-				ReadBytes:    getInt(serverJson, "proc", "diskIo", "readBytes"),
-				WrittenBytes: getInt(serverJson, "proc", "diskIo", "writtenBytes"),
-				ReadOps:      getInt(serverJson, "proc", "diskIo", "readOps"),
-				WriteOps:     getInt(serverJson, "proc", "diskIo", "writeOps"),
-			},
-			tcpStats: &TcpStats{
-				SentBytes:     getInt(serverJson, "proc", "tcp", "sentBytesTotal"),
-				ReceivedBytes: getInt(serverJson, "proc", "tcp", "receivedBytesTotal"),
-				Connections:   getInt(serverJson, "proc", "tcp", "connections"),
-			},
-			queues: getQueueStats(serverJson),
-			drives: getDriveStats(serverJson),
-		}, nil
-	} else {
+type EsStats struct {
+	Queues map[string]QueueStats `json:"queue"`
+}
+
+type QueueStats struct {
+	QueueName      string `json:"queueName"`
+	Length         int64  `json:"length"`
+	ItemsProcessed int64  `json:"totalItemsProcessed"`
+}
+
+func (client *EventStoreStatsClient) getServerStats(ctx context.Context) (*ServerStats, error) {
+	stats, err := esHttpGetAndParse[ServerStats](ctx, client, "/stats", false)
+	if err != nil {
 		return nil, err
 	}
-}
 
-func getQueueStats(serverStats []byte) []QueueStats {
-	queues := []QueueStats{}
-
-	jp.ObjectEach(serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
-		queues = append(queues, QueueStats{
-			Name:           string(key),
-			Length:         getInt(jsonValue, "length"),
-			ItemsProcessed: getInt(jsonValue, "totalItemsProcessed"),
-		})
-
-		return nil
-	}, "es", "queue")
-
-	return queues
-}
-
-func getDriveStats(serverStats []byte) []DriveStats {
-	drives := []DriveStats{}
-
-	jp.ObjectEach(serverStats, func(key []byte, jsonValue []byte, dataType jp.ValueType, offset int) error {
-		drives = append(drives, DriveStats{
-			Name:           string(key),
-			TotalBytes:     getInt(jsonValue, "totalBytes"),
-			AvailableBytes: getInt(jsonValue, "availableBytes"),
-		})
-
-		return nil
-	}, "sys", "drive")
-
-	return drives
+	return &stats, nil
 }

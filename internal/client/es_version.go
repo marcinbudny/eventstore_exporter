@@ -1,20 +1,8 @@
 package client
 
-import (
-	"context"
-
-	"github.com/hashicorp/go-version"
-)
+import "github.com/hashicorp/go-version"
 
 type EventStoreVersion string
-
-func (client *EventStoreStatsClient) getEsVersion(ctx context.Context) (EventStoreVersion, error) {
-	if infoJson, err := client.esHttpGet(ctx, "/info", false); err == nil {
-		return EventStoreVersion(getString(infoJson, "esVersion")), nil
-	} else {
-		return "", err
-	}
-}
 
 func (esVersion EventStoreVersion) IsAtLeastVersion(minVersion string) bool {
 	ver, err := version.NewVersion(string(esVersion))

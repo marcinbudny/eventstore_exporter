@@ -2,42 +2,23 @@ package client
 
 import (
 	"context"
-	"strings"
-
-	jp "github.com/buger/jsonparser"
 )
 
+type projectionStatsEnvelope struct {
+	Projections []ProjectionStats `json:"projections"`
+}
+
 type ProjectionStats struct {
-	Name                        string
-	Running                     bool
-	Stopped                     bool
-	Faulted                     bool
-	Progress                    float64
-	EventsProcessedAfterRestart int64
+	EffectiveName               string  `json:"effectiveName"`
+	Status                      string  `json:"status"`
+	Progress                    float64 `json:"progress"`
+	EventsProcessedAfterRestart int64   `json:"eventsProcessedAfterRestart"`
 }
 
 func (client *EventStoreStatsClient) getProjectionStats(ctx context.Context) ([]ProjectionStats, error) {
-	if projectionsJson, err := client.esHttpGet(ctx, "/projections/all-non-transient", true); err == nil {
-		return getProjectionStats(projectionsJson), nil
+	if envelope, err := esHttpGetAndParse[projectionStatsEnvelope](ctx, client, "/projections/all-non-transient", true); err == nil {
+		return envelope.Projections, nil
 	} else {
-		return nil, err
+		return []ProjectionStats{}, err
 	}
-}
-
-func getProjectionStats(projectionsJson []byte) []ProjectionStats {
-	projections := []ProjectionStats{}
-
-	jp.ArrayEach(projectionsJson, func(jsonValue []byte, dataType jp.ValueType, offset int, err error) {
-		projections = append(projections, ProjectionStats{
-			Name:                        getString(jsonValue, "effectiveName"),
-			Running:                     getString(jsonValue, "status") == "Running",
-			Stopped:                     getString(jsonValue, "status") == "Stopped",
-			Faulted:                     strings.Contains(getString(jsonValue, "status"), "Faulted"),
-			Progress:                    getFloat(jsonValue, "progress") / 100.0, // scale to 0-1
-			EventsProcessedAfterRestart: getInt(jsonValue, "eventsProcessedAfterRestart"),
-		})
-
-	}, "projections")
-
-	return projections
 }
