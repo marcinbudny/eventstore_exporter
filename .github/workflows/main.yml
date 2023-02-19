@@ -12,7 +12,6 @@ jobs:
     strategy:
       matrix:
         esVersion:
-          - 20.10.5-buster-slim
           - 21.10.8-buster-slim
           - 22.10.0-buster-slim
 
