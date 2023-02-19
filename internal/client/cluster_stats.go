@@ -22,14 +22,9 @@ type MemberStats struct {
 }
 
 func (client *EventStoreStatsClient) getClusterStats(ctx context.Context) (stats []MemberStats, err error) {
-	if client.config.IsInClusterMode() {
-
-		if gossip, err := esHttpGetAndParse[gossipEnvelope](ctx, client, "/gossip", false); err != nil {
-			return nil, err
-		} else {
-			return gossip.Members, nil
-		}
+	if gossip, err := esHttpGetAndParse[gossipEnvelope](ctx, client, "/gossip", false); err != nil {
+		return nil, err
+	} else {
+		return gossip.Members, nil
 	}
-
-	return []MemberStats{}, nil
 }

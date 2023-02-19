@@ -5,7 +5,6 @@ insecure-skip-verify
 eventstore-url=https://somewhere_else
 eventstore-password=password
 eventstore-user=user
-cluster-mode=single
 enable-parked-messages-stats=true
 streams=$all|my-test-stream|my-other-stream
 streams-separator=|

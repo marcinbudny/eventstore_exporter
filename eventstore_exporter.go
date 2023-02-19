@@ -24,7 +24,6 @@ func readAndValidateConfig() *config.Config {
 			"port":                      config.Port,
 			"timeout":                   config.Timeout,
 			"verbose":                   config.Verbose,
-			"clusterMode":               config.ClusterMode,
 			"insecureSkipVerify":        config.InsecureSkipVerify,
 			"enableParkedMessagesStats": config.EnableParkedMessagesStats,
 			"streams":                   config.Streams,

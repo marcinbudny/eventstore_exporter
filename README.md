@@ -16,7 +16,6 @@ eventstore_exporter \
     --eventstore-url=https://my-eventstore:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
-    --cluster-mode=single \
     --enable-parked-messages-stats
 ```
 
@@ -25,7 +24,6 @@ eventstore_exporter \
 ```bash
 docker run -d -p 9448:9448 \
     -e EVENTSTORE_URL=https://my-eventstore:2113 \
-    -e CLUSTER_MODE=single \
     -e EVENTSTORE_USER=admin \
     -e EVENTSTORE_PASSWORD=changeit \
     -e ENABLE_PARKED_MESSAGES_STATS=True \
@@ -43,13 +41,11 @@ eventstore_exporter \
     --eventstore-url=https://my-eventstore:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
-    --cluster-mode=single \
     --enable-parked-messages-stats
 ```
 
 ### Supported EventStoreDB versions
 
-- 20.10 LTS
 - 21.10 LTS
 - 22.10 LTS
 
@@ -58,6 +54,7 @@ Other versions may also work but are not tested.
 ### Unsupported versions
 
 - 5.0 (last supported in exporter version v0.10.4)
+- 20.10 LTS (last supported in exporter version v0.15.1)
 
 ## Configuration
 
