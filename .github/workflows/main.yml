@@ -19,7 +19,7 @@ jobs:
     name: tests on ES ${{ matrix.esVersion }}
 
     runs-on: ubuntu-latest
-    container: golang:1.19-buster
+    container: golang:1.20-buster
 
     services:
       eventstore:

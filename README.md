@@ -34,7 +34,7 @@ docker run -d -p 9448:9448 \
 
 ### From source
 
-You need to have a Go 1.19+ environment configured.
+You need to have a Go 1.20+ environment configured.
 
 ```bash
 go install github.com/marcinbudny/eventstore_exporter@latest
