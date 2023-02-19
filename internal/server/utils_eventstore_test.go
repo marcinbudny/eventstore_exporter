@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
-	"github.com/gofrs/uuid"
+	"github.com/gofrs/uuid/v5"
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
