@@ -23,5 +23,6 @@ func Test_ProjectionMetrics(t *testing.T) {
 }
 
 func shouldRunProjectionsTest(t *testing.T) bool {
+	t.Helper()
 	return getEsInfo(t).Features.Projections
 }

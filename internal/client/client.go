@@ -26,7 +26,7 @@ type Stats struct {
 	Projections    []ProjectionStats
 	Subscriptions  []SubscriptionStats
 	Streams        []StreamStats
-	TcpConnections []TcpConnectionStats
+	TCPConnections []TCPConnectionStats
 }
 
 func New(config *config.Config) *EventStoreStatsClient {
@@ -35,7 +35,7 @@ func New(config *config.Config) *EventStoreStatsClient {
 
 	if config.InsecureSkipVerify {
 		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // nolint: gosec
 		}
 		esClient.httpClient = http.Client{
 			Transport: tr,
@@ -50,15 +50,15 @@ func New(config *config.Config) *EventStoreStatsClient {
 func (client *EventStoreStatsClient) getGrpcClient() (*esdb.Client, error) {
 	log.Debug("Creating ES grpc client")
 
-	esUrl, err := url.Parse(client.config.EventStoreURL)
+	esURL, err := url.Parse(client.config.EventStoreURL)
 
 	if err != nil {
 		return nil, err
 	}
 
 	esConfig := &esdb.Configuration{
-		Address:                     esUrl.Host,
-		DisableTLS:                  esUrl.Scheme != "https",
+		Address:                     esURL.Host,
+		DisableTLS:                  esURL.Scheme != "https",
 		SkipCertificateVerification: client.config.InsecureSkipVerify,
 		DiscoveryInterval:           100,
 		GossipTimeout:               5,
@@ -83,66 +83,73 @@ func (client *EventStoreStatsClient) GetStats(ctx context.Context) (*Stats, erro
 	stats := &Stats{}
 
 	group.Go(func() error {
-		if info, err := client.GetEsInfo(ctx); err != nil {
+		info, err := client.GetEsInfo(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting ES Info: %w", err)
-		} else {
-			stats.Info = info
-			return nil
 		}
+
+		stats.Info = info
+		return nil
 	})
 
 	group.Go(func() error {
-		if serverStats, err := client.getServerStats(ctx); err != nil {
+		serverStats, err := client.getServerStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting server stats: %w", err)
-		} else {
-			stats.Server = serverStats
-			return nil
 		}
+
+		stats.Server = serverStats
+		return nil
 	})
 
 	group.Go(func() error {
-		if projectionStats, err := client.getProjectionStats(ctx); err != nil {
+		projectionStats, err := client.getProjectionStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting projection stats: %w", err)
-		} else {
-			stats.Projections = projectionStats
-			return nil
 		}
+
+		stats.Projections = projectionStats
+		return nil
 	})
 
 	group.Go(func() error {
-		if subscriptionStats, err := client.getSubscriptionStats(ctx); err != nil {
+		subscriptionStats, err := client.getSubscriptionStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting subscription stats: %w", err)
-		} else {
-			stats.Subscriptions = subscriptionStats
-			return nil
 		}
+
+		stats.Subscriptions = subscriptionStats
+		return nil
 	})
 
 	group.Go(func() error {
-		if streamStats, err := client.getStreamStats(ctx); err != nil {
+		streamStats, err := client.getStreamStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting stream stats: %w", err)
-		} else {
-			stats.Streams = streamStats
-			return nil
 		}
+
+		stats.Streams = streamStats
+		return nil
 	})
 
 	group.Go(func() error {
-		if clusterStats, err := client.getClusterStats(ctx); err != nil {
+		clusterStats, err := client.getClusterStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting cluster stats: %w", err)
-		} else {
-			stats.ClusterMembers = clusterStats
-			return nil
 		}
+
+		stats.ClusterMembers = clusterStats
+		return nil
 	})
 
 	group.Go(func() error {
-		if tcpConnectionStats, err := client.getTcpConnectionStats(ctx); err != nil {
+		tcpConnectionStats, err := client.getTCPConnectionStats(ctx)
+		if err != nil {
 			return fmt.Errorf("error while getting tcp connection stats: %w", err)
-		} else {
-			stats.TcpConnections = tcpConnectionStats
-			return nil
 		}
+
+		stats.TCPConnections = tcpConnectionStats
+		return nil
 	})
 
 	if err := group.Wait(); err != nil {

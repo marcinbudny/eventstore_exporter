@@ -16,9 +16,10 @@ type ProjectionStats struct {
 }
 
 func (client *EventStoreStatsClient) getProjectionStats(ctx context.Context) ([]ProjectionStats, error) {
-	if envelope, err := esHttpGetAndParse[projectionStatsEnvelope](ctx, client, "/projections/all-non-transient", true); err == nil {
-		return envelope.Projections, nil
-	} else {
-		return []ProjectionStats{}, err
+	envelope, err := esHTTPGetAndParse[projectionStatsEnvelope](ctx, client, "/projections/all-non-transient", true)
+	if err != nil {
+		return nil, err
 	}
+
+	return envelope.Projections, nil
 }

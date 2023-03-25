@@ -102,7 +102,9 @@ func shouldRunSubscriptionTests() bool {
 	return os.Getenv("TEST_CLUSTER_MODE") != "cluster"
 }
 
-func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, parkCount int) (streamID string, groupName string) {
+func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, parkCount int) (streamID string, groupName string) { // nolint:unparam
+	t.Helper()
+
 	streamID, groupName = newStreamAndGroup()
 	t.Logf("Stream: %s, group: %s", streamID, groupName)
 
@@ -124,6 +126,8 @@ func prepareSubscriptionEnvironment(t *testing.T, totalCount int, ackCount int, 
 }
 
 func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount int) (streamID string, groupName string) {
+	t.Helper()
+
 	streamID, groupName = newStreamAndGroup()
 	t.Logf("Stream: %s, group: %s", streamID, groupName)
 
@@ -150,6 +154,8 @@ func prepareSubscriptionEnvironmentWithReplayedMessages(t *testing.T, parkCount 
 }
 
 func createSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) {
+	t.Helper()
+
 	if err := client.CreatePersistentSubscription(context.Background(), streamID, groupName, esdb.PersistentStreamSubscriptionOptions{
 		StartFrom: esdb.Start{},
 	}); err != nil {
@@ -158,6 +164,8 @@ func createSubscription(t *testing.T, streamID string, groupName string, client 
 }
 
 func connectToSubscription(t *testing.T, streamID string, groupName string, client *esdb.Client) *esdb.PersistentSubscription {
+	t.Helper()
+
 	subscription, err := client.SubscribeToPersistentSubscription(
 
 		context.Background(), streamID, groupName, esdb.SubscribeToPersistentSubscriptionOptions{BufferSize: 1})

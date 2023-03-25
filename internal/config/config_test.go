@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -9,8 +8,6 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	defer clearEnvironment()
-
 	tests := []struct {
 		name           string
 		args           []string
@@ -31,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 				EnableParkedMessagesStats: false,
 				Streams:                   []string{},
 				StreamsSeparator:          ",",
-				EnableTcpConnectionStats:  false,
+				EnableTCPConnectionStats:  false,
 			},
 		},
 		{
@@ -60,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 				EnableParkedMessagesStats: true,
 				Streams:                   []string{"$all", "my-stream", "my-other-stream"},
 				StreamsSeparator:          ";",
-				EnableTcpConnectionStats:  true,
+				EnableTCPConnectionStats:  true,
 			},
 		},
 		{
@@ -103,19 +100,17 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigFromEnvironment(t *testing.T) {
-	defer clearEnvironment()
-
-	os.Setenv("TIMEOUT", "20s")
-	os.Setenv("PORT", "1231")
-	os.Setenv("INSECURE_SKIP_VERIFY", "true")
-	os.Setenv("VERBOSE", "true")
-	os.Setenv("EVENTSTORE_URL", "https://somewhere")
-	os.Setenv("EVENTSTORE_USER", "user")
-	os.Setenv("EVENTSTORE_PASSWORD", "password")
-	os.Setenv("ENABLE_PARKED_MESSAGES_STATS", "true")
-	os.Setenv("STREAMS", "$all;my-stream;my-other-stream")
-	os.Setenv("STREAMS_SEPARATOR", ";")
-	os.Setenv("ENABLE_TCP_CONNECTION_STATS", "true")
+	t.Setenv("TIMEOUT", "20s")
+	t.Setenv("PORT", "1231")
+	t.Setenv("INSECURE_SKIP_VERIFY", "true")
+	t.Setenv("VERBOSE", "true")
+	t.Setenv("EVENTSTORE_URL", "https://somewhere")
+	t.Setenv("EVENTSTORE_USER", "user")
+	t.Setenv("EVENTSTORE_PASSWORD", "password")
+	t.Setenv("ENABLE_PARKED_MESSAGES_STATS", "true")
+	t.Setenv("STREAMS", "$all;my-stream;my-other-stream")
+	t.Setenv("STREAMS_SEPARATOR", ";")
+	t.Setenv("ENABLE_TCP_CONNECTION_STATS", "true")
 
 	expectedConfig := Config{
 		Timeout:                   time.Duration(20 * time.Second),
@@ -128,7 +123,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		EnableParkedMessagesStats: true,
 		Streams:                   []string{"$all", "my-stream", "my-other-stream"},
 		StreamsSeparator:          ";",
-		EnableTcpConnectionStats:  true,
+		EnableTCPConnectionStats:  true,
 	}
 
 	if cfg, err := Load([]string{}, true); err == nil {
@@ -141,8 +136,6 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 }
 
 func TestLoadConfigFromFile(t *testing.T) {
-	defer clearEnvironment()
-
 	args := []string{"-config=sample_config"}
 
 	expectedConfig := Config{
@@ -156,7 +149,7 @@ func TestLoadConfigFromFile(t *testing.T) {
 		EnableParkedMessagesStats: true,
 		Streams:                   []string{"$all", "my-test-stream", "my-other-stream"},
 		StreamsSeparator:          "|",
-		EnableTcpConnectionStats:  true,
+		EnableTCPConnectionStats:  true,
 	}
 
 	if cfg, err := Load(args, true); err == nil {
@@ -166,18 +159,4 @@ func TestLoadConfigFromFile(t *testing.T) {
 	} else {
 		t.Errorf("unexpected error %v", err)
 	}
-}
-
-func clearEnvironment() {
-	os.Unsetenv("TIMEOUT")
-	os.Unsetenv("PORT")
-	os.Unsetenv("INSECURE_SKIP_VERIFY")
-	os.Unsetenv("VERBOSE")
-	os.Unsetenv("EVENTSTORE_URL")
-	os.Unsetenv("EVENTSTORE_USER")
-	os.Unsetenv("EVENTSTORE_PASSWORD")
-	os.Unsetenv("ENABLE_PARKED_MESSAGES_STATS")
-	os.Unsetenv("STREAMS")
-	os.Unsetenv("STREAMS_SEPARATOR")
-	os.Unsetenv("ENABLE_TCP_CONNECTION_STATS")
 }

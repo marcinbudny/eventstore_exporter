@@ -98,13 +98,15 @@ func Test_ParkedMessages_SubscriptionToAllMetric_With_Replayed_Messages(t *testi
 }
 
 func shouldRunSubscriptionToAllTests(t *testing.T) bool {
-
+	t.Helper()
 	esInfo := getEsInfo(t)
 	// do not run in cluster mode, as this causes issues when not connected to leader node
 	return os.Getenv("TEST_CLUSTER_MODE") != "cluster" && esInfo.EsVersion.IsAtLeastVersion("21.10.0.0")
 }
 
 func prepareSubscriptionToAllEnvironment(t *testing.T, totalCount int, ackCount int, parkCount int) string {
+	t.Helper()
+
 	streamID, groupName := newStreamAndGroup()
 	t.Logf("Stream: %s, group: %s", streamID, groupName)
 
@@ -126,6 +128,8 @@ func prepareSubscriptionToAllEnvironment(t *testing.T, totalCount int, ackCount 
 }
 
 func prepareSubscriptionToAllEnvironmentWithReplayedMessages(t *testing.T, parkCount int) string {
+	t.Helper()
+
 	streamID, groupName := newStreamAndGroup()
 	t.Logf("Stream: %s, group: %s", streamID, groupName)
 
@@ -152,6 +156,8 @@ func prepareSubscriptionToAllEnvironmentWithReplayedMessages(t *testing.T, parkC
 }
 
 func createSubscriptionToAll(t *testing.T, groupName string, client *esdb.Client) {
+	t.Helper()
+
 	if err := client.CreatePersistentSubscriptionToAll(context.Background(), groupName, esdb.PersistentAllSubscriptionOptions{
 		StartFrom: esdb.Start{},
 	}); err != nil {
@@ -160,6 +166,8 @@ func createSubscriptionToAll(t *testing.T, groupName string, client *esdb.Client
 }
 
 func connectToSubscriptionToAll(t *testing.T, groupName string, client *esdb.Client) *esdb.PersistentSubscription {
+	t.Helper()
+
 	subscription, err := client.SubscribeToPersistentSubscriptionToAll(
 
 		context.Background(), groupName, esdb.SubscribeToPersistentSubscriptionOptions{BufferSize: 1})

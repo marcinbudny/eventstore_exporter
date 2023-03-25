@@ -131,7 +131,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.tcpReceivedBytes
 	ch <- c.tcpConnections
 
-	if c.config.EnableTcpConnectionStats {
+	if c.config.EnableTCPConnectionStats {
 		ch <- c.tcpConnectionSentBytes
 		ch <- c.tcpConnectionReceivedBytes
 		ch <- c.tcpConnectionPendingSendBytes
@@ -187,7 +187,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 func (c *Collector) collectFromStats(ch chan<- prometheus.Metric, stats *client.Stats) {
 	c.collectFromServerStats(ch, stats)
-	c.collectFromTcpConnectionStats(ch, stats.TcpConnections)
+	c.collectFromTCPConnectionStats(ch, stats.TCPConnections)
 	c.collectFromQueueStats(ch, stats.Server.Es.Queues)
 	c.collectFromDriveStats(ch, stats.Server.System.Drives)
 	c.collectFromProjectionStats(ch, stats.Projections)
@@ -197,20 +197,20 @@ func (c *Collector) collectFromStats(ch chan<- prometheus.Metric, stats *client.
 }
 
 func (c *Collector) collectFromServerStats(ch chan<- prometheus.Metric, stats *client.Stats) {
-	ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, stats.Server.Process.Cpu/100.0) // scale to 0-[num of cores]
+	ch <- prometheus.MustNewConstMetric(c.processCPU, prometheus.GaugeValue, stats.Server.Process.CPU/100.0) // scale to 0-[num of cores]
 	ch <- prometheus.MustNewConstMetric(c.processMemoryBytes, prometheus.GaugeValue, float64(stats.Server.Process.MemoryBytes))
 	ch <- prometheus.MustNewConstMetric(c.diskIoReadBytes, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.ReadBytes))
 	ch <- prometheus.MustNewConstMetric(c.diskIoWrittenBytes, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.WrittenBytes))
 	ch <- prometheus.MustNewConstMetric(c.diskIoReadOps, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.ReadOps))
 	ch <- prometheus.MustNewConstMetric(c.diskIoWriteOps, prometheus.GaugeValue, float64(stats.Server.Process.DiskIo.WriteOps))
-	ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.SentBytes))
-	ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.ReceivedBytes))
-	ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, float64(stats.Server.Process.Tcp.Connections))
+	ch <- prometheus.MustNewConstMetric(c.tcpSentBytes, prometheus.GaugeValue, float64(stats.Server.Process.TCP.SentBytes))
+	ch <- prometheus.MustNewConstMetric(c.tcpReceivedBytes, prometheus.GaugeValue, float64(stats.Server.Process.TCP.ReceivedBytes))
+	ch <- prometheus.MustNewConstMetric(c.tcpConnections, prometheus.GaugeValue, float64(stats.Server.Process.TCP.Connections))
 }
 
-func (c *Collector) collectFromTcpConnectionStats(ch chan<- prometheus.Metric, stats []client.TcpConnectionStats) {
+func (c *Collector) collectFromTCPConnectionStats(ch chan<- prometheus.Metric, stats []client.TCPConnectionStats) {
 	for _, tcpConn := range stats {
-		id := tcpConn.ConnectionId
+		id := tcpConn.ConnectionID
 		clientName := tcpConn.ClientConnectionName
 		remoteEndPoint := tcpConn.RemoteEndPoint
 		localEndPoint := tcpConn.LocalEndPoint
@@ -332,7 +332,7 @@ func (c *Collector) collectFromClusterStats(ch chan<- prometheus.Metric, stats *
 			isAlive = 1.0
 		}
 
-		memberName := fmt.Sprintf("%s:%d", member.HttpEndpointIp, member.HttpEndpointPort)
+		memberName := fmt.Sprintf("%s:%d", member.HTTPEndpointIP, member.HTTPEndpointPort)
 
 		ch <- prometheus.MustNewConstMetric(c.clusterMemberAlive, prometheus.GaugeValue, isAlive, memberName)
 	}

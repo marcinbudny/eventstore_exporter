@@ -3,13 +3,13 @@ package server
 import (
 	"fmt"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
+	"time"
 
 	"github.com/marcinbudny/eventstore_exporter/internal/collector"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 )
 
 type ExporterServer struct {
@@ -32,7 +32,16 @@ func NewExporterServer(config *config.Config, collector *collector.Collector) *E
 
 func (server *ExporterServer) ListenAndServe() {
 	listenAddr := fmt.Sprintf(":%d", server.config.Port)
-	log.Fatal(http.ListenAndServe(listenAddr, server.mux))
+
+	srv := &http.Server{
+		Addr:         listenAddr,
+		Handler:      server.mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }
 
 func (server *ExporterServer) serveLandingPage() {

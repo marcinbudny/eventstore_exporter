@@ -10,7 +10,9 @@ import (
 	"github.com/prometheus/common/expfmt"
 )
 
-func getMetrics(url string, t *testing.T) map[string]*dto.MetricFamily {
+func getMetrics(url string, t *testing.T) map[string]*dto.MetricFamily { // nolint:thelper
+	t.Helper()
+
 	res, err := http.Get(url + "/metrics")
 	if err != nil {
 		t.Fatal(err)
@@ -25,8 +27,10 @@ func getMetrics(url string, t *testing.T) map[string]*dto.MetricFamily {
 	return mf
 }
 
-func getStringFromExporterEndpoint(url string, t *testing.T) string {
-	res, err := http.Get(url)
+func getStringFromExporterEndpoint(url string, t *testing.T) string { // nolint:thelper
+	t.Helper()
+
+	res, err := http.Get(url) // nolint:gosec
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,6 +49,7 @@ func assertHasMetric(
 	name string,
 	metricType string,
 ) {
+	t.Helper()
 	assertMetric(t, metrics, name, metricType, anyMetric, anyValue)
 }
 
@@ -56,6 +61,8 @@ func assertMetric(
 	selectMetric func(*testing.T, []*dto.Metric) *dto.Metric,
 	assertValue func(*testing.T, float64),
 ) {
+	t.Helper()
+
 	t.Logf("Asserting metric %s", name)
 	if family, ok := metrics[name]; ok {
 		metric := selectMetric(t, family.Metric)
@@ -87,6 +94,7 @@ func assertMetric(
 }
 
 func assertHasNoMetric(t *testing.T, metrics map[string]*dto.MetricFamily, name string) {
+	t.Helper()
 	if _, ok := metrics[name]; ok {
 		t.Errorf("Metric family %s is present but should not be", name)
 	}
@@ -96,6 +104,7 @@ func anyValue(*testing.T, float64) {
 }
 
 func nonZeroValue(t *testing.T, actualValue float64) {
+	t.Helper()
 	if actualValue == 0.0 {
 		t.Errorf("Expected non-zero value")
 	}
@@ -103,6 +112,7 @@ func nonZeroValue(t *testing.T, actualValue float64) {
 
 func hasValue(expectedValue float64) func(*testing.T, float64) {
 	return func(t *testing.T, actualValue float64) {
+		t.Helper()
 		if expectedValue != actualValue {
 			t.Errorf("Expected metric value to be %v but is actually %v", expectedValue, actualValue)
 		}
@@ -110,6 +120,7 @@ func hasValue(expectedValue float64) func(*testing.T, float64) {
 }
 
 func singleValuedMetric(t *testing.T, metrics []*dto.Metric) *dto.Metric {
+	t.Helper()
 	if len(metrics) != 1 {
 		t.Errorf("Expected single valued metric, but %d metrics are in the family", len(metrics))
 	}
@@ -117,6 +128,7 @@ func singleValuedMetric(t *testing.T, metrics []*dto.Metric) *dto.Metric {
 }
 
 func anyMetric(t *testing.T, metrics []*dto.Metric) *dto.Metric {
+	t.Helper()
 	if len(metrics) == 0 {
 		t.Error("No metrics in the family")
 	}
@@ -125,6 +137,7 @@ func anyMetric(t *testing.T, metrics []*dto.Metric) *dto.Metric {
 
 func metricByLabelValue(name string, value string) func(*testing.T, []*dto.Metric) *dto.Metric {
 	return func(t *testing.T, metrics []*dto.Metric) *dto.Metric {
+		t.Helper()
 		for _, metric := range metrics {
 			for _, label := range metric.Label {
 				if *label.Name == name && *label.Value == value {
