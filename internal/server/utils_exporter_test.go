@@ -1,7 +1,6 @@
 package server
 
 import (
-	"os"
 	"time"
 
 	"github.com/marcinbudny/eventstore_exporter/internal/client"
@@ -16,16 +15,10 @@ func prepareExporterServer() *ExporterServer {
 func prepareExporterServerWithConfig(updateConfig func(*config.Config)) *ExporterServer {
 	eventStoreURL := getEventStoreURL()
 
-	clusterMode := "single"
-	if os.Getenv("TEST_CLUSTER_MODE") != "" {
-		clusterMode = os.Getenv("TEST_CLUSTER_MODE")
-	}
-
 	config := &config.Config{
 		EventStoreURL:             eventStoreURL,
 		EventStoreUser:            "admin",
 		EventStorePassword:        "changeit",
-		ClusterMode:               clusterMode,
 		InsecureSkipVerify:        true,
 		Timeout:                   time.Second * 10,
 		EnableParkedMessagesStats: true,
@@ -48,7 +41,6 @@ func prepareExporterServerWithInvalidConnection() *ExporterServer {
 		EventStoreURL:      eventStoreURL,
 		EventStoreUser:     "admin",
 		EventStorePassword: "changeit",
-		ClusterMode:        "single",
 		InsecureSkipVerify: true,
 		Timeout:            time.Second * 10,
 	}

@@ -46,6 +46,8 @@ func getStreamStatsFromEachStream(ctx context.Context, client *EventStoreStatsCl
 			log.WithField("stream", stream).Debug("Getting stream stats")
 			if stats, getErr := getSingleStreamStats(ctx, grpcClient, stream, client.config.Timeout); getErr == nil {
 				streamStats[idx] = stats
+			} else {
+				streamStats[idx] = StreamStats{EventStreamID: stream, LastCommitPosition: -1, LastEventNumber: -1}
 			}
 
 		}(stream, i)

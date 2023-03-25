@@ -149,13 +149,11 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.projectionProgress
 	ch <- c.projectionEventsProcessedAfterRestart
 
-	if c.config.IsInClusterMode() {
-		ch <- c.clusterMemberAlive
-		ch <- c.clusterMemberIsClone
-		ch <- c.clusterMemberIsLeader
-		ch <- c.clusterMemberIsFollower
-		ch <- c.clusterMemberIsReadonlyReplica
-	}
+	ch <- c.clusterMemberAlive
+	ch <- c.clusterMemberIsClone
+	ch <- c.clusterMemberIsLeader
+	ch <- c.clusterMemberIsFollower
+	ch <- c.clusterMemberIsReadonlyReplica
 
 	ch <- c.subscriptionTotalItemsProcessed
 	ch <- c.subscriptionLastProcessedEventNumber
@@ -303,42 +301,39 @@ func (c *Collector) collectFromStreamStats(ch chan<- prometheus.Metric, stats []
 }
 
 func (c *Collector) collectFromClusterStats(ch chan<- prometheus.Metric, stats *client.Stats) {
-	if c.config.IsInClusterMode() {
+	isLeader := 0.0
+	if stats.Info.MemberState == client.MemberStateLeader {
+		isLeader = 1.0
+	}
 
-		isLeader := 0.0
-		if stats.Info.MemberState == client.MemberStateLeader {
-			isLeader = 1.0
+	isFollower := 0.0
+	if stats.Info.MemberState == client.MemberStateFollower {
+		isFollower = 1.0
+	}
+
+	isReadOnlyReplica := 0.0
+	if stats.Info.MemberState == client.MemberStateReadOnlyReplica {
+		isReadOnlyReplica = 1.0
+	}
+
+	isClone := 0.0
+	if stats.Info.MemberState == client.MemberStateClone {
+		isClone = 1.0
+	}
+
+	ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, isLeader)
+	ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, isFollower)
+	ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, isReadOnlyReplica)
+	ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, isClone)
+
+	for _, member := range stats.ClusterMembers {
+		isAlive := 0.0
+		if member.IsAlive {
+			isAlive = 1.0
 		}
 
-		isFollower := 0.0
-		if stats.Info.MemberState == client.MemberStateFollower {
-			isFollower = 1.0
-		}
+		memberName := fmt.Sprintf("%s:%d", member.HttpEndpointIp, member.HttpEndpointPort)
 
-		isReadOnlyReplica := 0.0
-		if stats.Info.MemberState == client.MemberStateReadOnlyReplica {
-			isReadOnlyReplica = 1.0
-		}
-
-		isClone := 0.0
-		if stats.Info.MemberState == client.MemberStateClone {
-			isClone = 1.0
-		}
-
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsLeader, prometheus.GaugeValue, isLeader)
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsFollower, prometheus.GaugeValue, isFollower)
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsReadonlyReplica, prometheus.GaugeValue, isReadOnlyReplica)
-		ch <- prometheus.MustNewConstMetric(c.clusterMemberIsClone, prometheus.GaugeValue, isClone)
-
-		for _, member := range stats.ClusterMembers {
-			isAlive := 0.0
-			if member.IsAlive {
-				isAlive = 1.0
-			}
-
-			memberName := fmt.Sprintf("%s:%d", member.HttpEndpointIp, member.HttpEndpointPort)
-
-			ch <- prometheus.MustNewConstMetric(c.clusterMemberAlive, prometheus.GaugeValue, isAlive, memberName)
-		}
+		ch <- prometheus.MustNewConstMetric(c.clusterMemberAlive, prometheus.GaugeValue, isAlive, memberName)
 	}
 }

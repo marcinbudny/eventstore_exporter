@@ -16,7 +16,6 @@ eventstore_exporter \
     --eventstore-url=https://my-eventstore:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
-    --cluster-mode=single \
     --enable-parked-messages-stats
 ```
 
@@ -25,7 +24,6 @@ eventstore_exporter \
 ```bash
 docker run -d -p 9448:9448 \
     -e EVENTSTORE_URL=https://my-eventstore:2113 \
-    -e CLUSTER_MODE=single \
     -e EVENTSTORE_USER=admin \
     -e EVENTSTORE_PASSWORD=changeit \
     -e ENABLE_PARKED_MESSAGES_STATS=True \
@@ -43,13 +41,11 @@ eventstore_exporter \
     --eventstore-url=https://my-eventstore:2113 \
     --eventstore-user=admin \
     --eventstore-password=changeit \
-    --cluster-mode=single \
     --enable-parked-messages-stats
 ```
 
 ### Supported EventStoreDB versions
 
-- 20.10 LTS
 - 21.10 LTS
 - 22.10 LTS
 
@@ -58,26 +54,26 @@ Other versions may also work but are not tested.
 ### Unsupported versions
 
 - 5.0 (last supported in exporter version v0.10.4)
+- 20.10 LTS (last supported in exporter version v0.15.1)
 
 ## Configuration
 
 The exporter can be configured with command line arguments, environment variables and a configuration file. For the details on how to format the configuration file, visit [namsral/flag](https://github.com/namsral/flag) repo.
 
-| Flag                           | ENV variable                 | Default                 | Meaning                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------------ | ---------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| --config                       |                              |                         | Path to config file (optional)                                                                                                                                                                                                                                                                                                                                            |
-| --eventstore-url               | EVENTSTORE_URL               | <http://localhost:2113> | EventStoreDB HTTP endpoint                                                                                                                                                                                                                                                                                                                                                |
-| --eventstore-user              | EVENTSTORE_USER              | (empty)                 | EventStoreDB user (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                              |
-| --eventstore-password          | EVENTSTORE_PASSWORD          | (empty)                 | EventStoreDB password (if not specified, basic auth is not used)                                                                                                                                                                                                                                                                                                          |
-| --cluster-mode                 | CLUSTER_MODE                 | cluster                 | Set to 'single' when monitoring a single node instance, set to 'cluster' when monitoring a cluster node. This settings decides whether gossip stats endpoint is queried. **Note:** Starting with ES 21.2, the gossip endpoint responds to queries even for single node installation. So if using this version, you can ignore this setting and leave it at default value. |
-| --port                         | PORT                         | 9448                    | Port to expose scrape endpoint on                                                                                                                                                                                                                                                                                                                                         |
-| --timeout                      | TIMEOUT                      | 10s                     | Timeout for the scrape operation                                                                                                                                                                                                                                                                                                                                          |
-| --verbose                      | VERBOSE                      | false                   | Enable verbose logging                                                                                                                                                                                                                                                                                                                                                    |
-| --insecure-skip-verify         | INSECURE_SKIP_VERIFY         | false                   | Skip TLS certificate verification for EventStore HTTP client                                                                                                                                                                                                                                                                                                              |
-| --enable-parked-messages-stats | ENABLE_PARKED_MESSAGES_STATS | false                   | Enable parked messages stats scraping.                                                                                                 |
-| --streams                      | STREAMS                      | (empty)                 | List of streams to get stats for e.g. `$all,my-stream`. Currently last event position / last event number is the only supported metric.                                                                                                                                                                                                                                   |
-| --streams-separator            | STREAMS_SEPARATOR            | `,`                     | Single character separator for streams list provided in `--streams`. Change from default if your stream names contain commas.                                                                                                                                                                                                                                             |
-| --enable-tcp-connection-stats  | ENABLE_TCP_CONNECTION_STATS  | false                   | Enable scraping of TCP connection stats (connections between nodes in the cluster, TCP client connections, excluding gRPC)                                                                                                                                                                                                                                                |
+| Flag                           | ENV variable                 | Default                 | Meaning                                                                                                                                 |
+| ------------------------------ | ---------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| --config                       |                              |                         | Path to config file (optional)                                                                                                          |
+| --eventstore-url               | EVENTSTORE_URL               | <http://localhost:2113> | EventStoreDB HTTP endpoint                                                                                                              |
+| --eventstore-user              | EVENTSTORE_USER              | (empty)                 | EventStoreDB user (if not specified, basic auth is not used)                                                                            |
+| --eventstore-password          | EVENTSTORE_PASSWORD          | (empty)                 | EventStoreDB password (if not specified, basic auth is not used)                                                                        |
+| --port                         | PORT                         | 9448                    | Port to expose scrape endpoint on                                                                                                       |
+| --timeout                      | TIMEOUT                      | 10s                     | Timeout for the scrape operation                                                                                                        |
+| --verbose                      | VERBOSE                      | false                   | Enable verbose logging                                                                                                                  |
+| --insecure-skip-verify         | INSECURE_SKIP_VERIFY         | false                   | Skip TLS certificate verification for EventStore HTTP client                                                                            |
+| --enable-parked-messages-stats | ENABLE_PARKED_MESSAGES_STATS | false                   | Enable parked messages stats scraping.                                                                                                  |
+| --streams                      | STREAMS                      | (empty)                 | List of streams to get stats for e.g. `$all,my-stream`. Currently last event position / last event number is the only supported metric. |
+| --streams-separator            | STREAMS_SEPARATOR            | `,`                     | Single character separator for streams list provided in `--streams`. Change from default if your stream names contain commas.           |
+| --enable-tcp-connection-stats  | ENABLE_TCP_CONNECTION_STATS  | false                   | Enable scraping of TCP connection stats (connections between nodes in the cluster, TCP client connections, excluding gRPC)              |
 
 
 Sample configuration file
