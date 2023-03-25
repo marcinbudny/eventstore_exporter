@@ -19,7 +19,7 @@ func readAndValidateConfig() *config.Config {
 
 	password := config.EventStorePassword
 	if password != "" {
-		password = "**REDACTED**"
+		password = "**REDACTED**" // nolint:gosec
 	}
 	log.WithFields(log.Fields{
 		"eventStoreURL":             config.EventStoreURL,
