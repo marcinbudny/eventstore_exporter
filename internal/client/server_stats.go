@@ -11,10 +11,10 @@ type ServerStats struct {
 }
 
 type ProcessStats struct {
-	Cpu         float64     `json:"cpu"`
+	CPU         float64     `json:"cpu"`
 	MemoryBytes int64       `json:"mem"`
 	DiskIo      DiskIoStats `json:"diskIo"`
-	Tcp         TcpStats    `json:"tcp"`
+	TCP         TCPStats    `json:"tcp"`
 }
 
 type DiskIoStats struct {
@@ -24,7 +24,7 @@ type DiskIoStats struct {
 	WriteOps     int64 `json:"writeOps"`
 }
 
-type TcpStats struct {
+type TCPStats struct {
 	SentBytes     int64 `json:"sentBytesTotal"`
 	ReceivedBytes int64 `json:"receivedBytesTotal"`
 	Connections   int64 `json:"connections"`
@@ -50,7 +50,7 @@ type QueueStats struct {
 }
 
 func (client *EventStoreStatsClient) getServerStats(ctx context.Context) (*ServerStats, error) {
-	stats, err := esHttpGetAndParse[ServerStats](ctx, client, "/stats", false)
+	stats, err := esHTTPGetAndParse[ServerStats](ctx, client, "/stats", false)
 	if err != nil {
 		return nil, err
 	}

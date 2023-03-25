@@ -22,7 +22,7 @@ func tryDetectEventStoreURL() {
 		return // already set
 	}
 
-	client := getEventstoreHttpClientWithConfig(func(client *http.Client) {
+	client := getEventstoreHTTPClientWithConfig(func(client *http.Client) {
 		client.Timeout = time.Second * 1
 	})
 

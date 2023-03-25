@@ -8,8 +8,8 @@ import (
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
-func Test_Returns_Tcp_Connection_Stats(t *testing.T) {
-	if !shouldRunTcpConnectionTests() {
+func Test_Returns_TCP_Connection_Stats(t *testing.T) {
+	if !shouldRunTCPConnectionTests() {
 		t.Log("Skipping TCP connection tests")
 		return
 	}
@@ -26,14 +26,14 @@ func Test_Returns_Tcp_Connection_Stats(t *testing.T) {
 	assertHasMetric(t, metrics, "eventstore_tcp_connection_pending_received_bytes", "gauge")
 }
 
-func Test_Returns_No_Tcp_Connection_Stats_When_Disabled(t *testing.T) {
-	if !shouldRunTcpConnectionTests() {
+func Test_Returns_No_TCP_Connection_Stats_When_Disabled(t *testing.T) {
+	if !shouldRunTCPConnectionTests() {
 		t.Log("Skipping TCP connection tests")
 		return
 	}
 
 	es := prepareExporterServerWithConfig(func(c *config.Config) {
-		c.EnableTcpConnectionStats = false
+		c.EnableTCPConnectionStats = false
 	})
 	ts := httptest.NewServer(es.mux)
 	defer ts.Close()
@@ -46,7 +46,7 @@ func Test_Returns_No_Tcp_Connection_Stats_When_Disabled(t *testing.T) {
 	assertHasNoMetric(t, metrics, "eventstore_tcp_connection_pending_received_bytes")
 }
 
-func shouldRunTcpConnectionTests() bool {
+func shouldRunTCPConnectionTests() bool {
 	// we'll have TCP connections to test only in the cluster mode (inter node communication)
 	return os.Getenv("TEST_CLUSTER_MODE") == "cluster"
 }

@@ -11,12 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (client *EventStoreStatsClient) esHttpGet(ctx context.Context, path string, acceptNotFound bool) (result []byte, err error) {
+func (client *EventStoreStatsClient) esHTTPGet(ctx context.Context, path string, acceptNotFound bool) (result []byte, err error) {
 	url := client.config.EventStoreURL + path
 
 	log.WithField("url", url).Debug("GET request to EventStore")
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if client.config.EventStoreUser != "" && client.config.EventStorePassword != "" {
 		req.SetBasicAuth(client.config.EventStoreUser, client.config.EventStorePassword)
 	}
@@ -43,10 +43,10 @@ func (client *EventStoreStatsClient) esHttpGet(ctx context.Context, path string,
 	return buf, nil
 }
 
-func esHttpGetAndParse[TResponse any](ctx context.Context, client *EventStoreStatsClient, path string, acceptNotFound bool) (TResponse, error) {
+func esHTTPGetAndParse[TResponse any](ctx context.Context, client *EventStoreStatsClient, path string, acceptNotFound bool) (TResponse, error) {
 	var response TResponse
 
-	jsonBytes, err := client.esHttpGet(ctx, path, acceptNotFound)
+	jsonBytes, err := client.esHTTPGet(ctx, path, acceptNotFound)
 	if err != nil || jsonBytes == nil {
 		return response, err
 	}

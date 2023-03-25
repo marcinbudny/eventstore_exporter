@@ -2,10 +2,10 @@ package client
 
 import "context"
 
-type TcpConnectionStats struct {
+type TCPConnectionStats struct {
 	RemoteEndPoint       string `json:"remoteEndPoint"`
 	LocalEndPoint        string `json:"localEndPoint"`
-	ConnectionId         string `json:"connectionId"`
+	ConnectionID         string `json:"connectionId"`
 	ClientConnectionName string `json:"clientConnectionName"`
 	TotalBytesSent       int64  `json:"totalBytesSent"`
 	TotalBytesReceived   int64  `json:"totalBytesReceived"`
@@ -15,12 +15,12 @@ type TcpConnectionStats struct {
 	IsSslConnection      bool   `json:"isSslConnection"`
 }
 
-func (client *EventStoreStatsClient) getTcpConnectionStats(ctx context.Context) ([]TcpConnectionStats, error) {
-	if !client.config.EnableTcpConnectionStats {
-		return []TcpConnectionStats{}, nil
+func (client *EventStoreStatsClient) getTCPConnectionStats(ctx context.Context) ([]TCPConnectionStats, error) {
+	if !client.config.EnableTCPConnectionStats {
+		return []TCPConnectionStats{}, nil
 	}
 
-	stats, err := esHttpGetAndParse[[]TcpConnectionStats](ctx, client, "/stats/tcp", false)
+	stats, err := esHTTPGetAndParse[[]TCPConnectionStats](ctx, client, "/stats/tcp", false)
 	if err != nil {
 		return nil, err
 	}

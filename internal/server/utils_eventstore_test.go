@@ -16,13 +16,13 @@ import (
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 )
 
-func getEventstoreHttpClient() *http.Client {
-	return getEventstoreHttpClientWithConfig(nil)
+func getEventstoreHTTPClient() *http.Client {
+	return getEventstoreHTTPClientWithConfig(nil)
 }
 
-func getEventstoreHttpClientWithConfig(configureClient func(*http.Client)) *http.Client {
+func getEventstoreHTTPClientWithConfig(configureClient func(*http.Client)) *http.Client {
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // nolint: gosec
 	}
 	client := &http.Client{
 		Transport: tr,
@@ -37,11 +37,13 @@ func getEventstoreHttpClientWithConfig(configureClient func(*http.Client)) *http
 }
 
 func replayParkedMessages(t *testing.T, streamID string, groupName string) {
-	httpClient := getEventstoreHttpClient()
+	t.Helper()
+
+	httpClient := getEventstoreHTTPClient()
 
 	eventStoreURL := getEventStoreURL()
 
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/subscriptions/%s/%s/replayParked", eventStoreURL, streamID, groupName), nil)
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/subscriptions/%s/%s/replayParked", eventStoreURL, streamID, groupName), nil)
 	req.SetBasicAuth("admin", "changeit")
 	req.Header.Add("Accept", "application/json")
 	res, errPost := httpClient.Do(req)
@@ -50,12 +52,14 @@ func replayParkedMessages(t *testing.T, streamID string, groupName string) {
 		t.Fatal(errPost)
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		t.Fatal("Unable to replay messages")
 	}
 }
 
 func getEsInfo(t *testing.T) *client.EsInfo {
+	t.Helper()
+
 	c := client.New(&config.Config{
 		EventStoreURL:      getEventStoreURL(),
 		EventStoreUser:     "admin",
@@ -99,6 +103,8 @@ func getEventStoreConnectionString() string {
 }
 
 func getEsClient(t *testing.T) *esdb.Client {
+	t.Helper()
+
 	connectionString := getEventStoreConnectionString()
 	t.Logf("ES connection string: %s", connectionString)
 
@@ -124,6 +130,8 @@ func newUUID() string {
 }
 
 func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb.Client) {
+	t.Helper()
+
 	events := make([]esdb.EventData, 0)
 	for i := 0; i < eventCount; i++ {
 		events = append(events, esdb.EventData{
@@ -143,6 +151,8 @@ func writeTestEvents(t *testing.T, eventCount int, streamID string, client *esdb
 }
 
 func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscription) {
+	t.Helper()
+
 	for i := 0; i < ackCount; i++ {
 		event := subscription.Recv().EventAppeared
 		if err := subscription.Ack(event.Event); err != nil {
@@ -152,6 +162,7 @@ func ackMessages(t *testing.T, ackCount int, subscription *esdb.PersistentSubscr
 }
 
 func parkMessages(t *testing.T, parkCount int, subscription *esdb.PersistentSubscription) {
+	t.Helper()
 
 	for i := 0; i < parkCount; i++ {
 		event := subscription.Recv().EventAppeared

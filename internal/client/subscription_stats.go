@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -27,7 +28,7 @@ type SubscriptionStats struct {
 }
 
 func (client *EventStoreStatsClient) getSubscriptionStats(ctx context.Context) ([]SubscriptionStats, error) {
-	subscriptions, err := esHttpGetAndParse[[]SubscriptionStats](ctx, client, "/subscriptions", false)
+	subscriptions, err := esHTTPGetAndParse[[]SubscriptionStats](ctx, client, "/subscriptions", false)
 	if err != nil {
 		return nil, err
 	}
@@ -78,16 +79,16 @@ func (client *EventStoreStatsClient) addParkedMessagesStats(ctx context.Context,
 	wg.Wait()
 }
 
-func getParkedMessagesStats(ctx context.Context, grpc *esdb.Client, eventStreamId, groupName string) (numParked int64, oldestAgeInSec float64, err error) {
+func getParkedMessagesStats(ctx context.Context, grpc *esdb.Client, eventStreamID, groupName string) (numParked int64, oldestAgeInSec float64, err error) {
 	oldestAgeInSec = -1
 
-	parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(ctx, grpc, eventStreamId, groupName)
+	parkedMessageFound, lastEventNumber, err := getParkedMessagesLastEventNumber(ctx, grpc, eventStreamID, groupName)
 
 	if err != nil || !parkedMessageFound {
 		return
 	}
 
-	truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(ctx, grpc, eventStreamId, groupName)
+	truncateBeforeValue, err := getParkedMessagesTruncateBeforeValue(ctx, grpc, eventStreamID, groupName)
 
 	if err != nil {
 		return
@@ -97,7 +98,7 @@ func getParkedMessagesStats(ctx context.Context, grpc *esdb.Client, eventStreamI
 
 	if totalNumberOfParkedMessages > 0 {
 		oldestMessagePosition := lastEventNumber + 1 - totalNumberOfParkedMessages
-		oldestAgeInSec, _ = getOldestParkedMessageAgeInSeconds(ctx, grpc, eventStreamId, groupName, oldestMessagePosition)
+		oldestAgeInSec, _ = getOldestParkedMessageAgeInSeconds(ctx, grpc, eventStreamID, groupName, oldestMessagePosition)
 	}
 
 	numParked = int64(totalNumberOfParkedMessages)
@@ -108,7 +109,7 @@ func getParkedMessagesStats(ctx context.Context, grpc *esdb.Client, eventStreamI
 func getOldestParkedMessageAgeInSeconds(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string, oldestMessagePosition uint64) (float64, error) {
 	event, err := readSingleEvent(ctx, grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Forwards, From: esdb.Revision(oldestMessagePosition)})
 
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return -1, nil
 	} else if err != nil {
 		log.WithError(err).WithFields(log.Fields{
@@ -130,7 +131,7 @@ func getOldestParkedMessageAgeInSeconds(ctx context.Context, grpcClient *esdb.Cl
 func getParkedMessagesLastEventNumber(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string) (bool, uint64, error) {
 	event, err := readSingleEvent(ctx, grpcClient, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{Direction: esdb.Backwards, From: esdb.End{}})
 
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return false, 0, nil
 	} else if err != nil {
 		log.WithError(err).WithFields(log.Fields{

@@ -17,9 +17,10 @@ type Features struct {
 }
 
 func (client *EventStoreStatsClient) GetEsInfo(ctx context.Context) (*EsInfo, error) {
-	if info, err := esHttpGetAndParse[EsInfo](ctx, client, "/info", false); err != nil {
+	info, err := esHTTPGetAndParse[EsInfo](ctx, client, "/info", false)
+	if err != nil {
 		return nil, err
-	} else {
-		return &info, nil
 	}
+
+	return &info, nil
 }

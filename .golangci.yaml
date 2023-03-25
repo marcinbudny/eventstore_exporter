@@ -1,0 +1,19 @@
+linters:
+  enable:
+    # all standard linters plus:
+    - asasalint
+    - errorlint
+    - gci
+    - gofmt
+    - gosec
+    - nilerr
+    - nilnil
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - tenv
+    - thelper
+    - unparam
+    - usestdlibvars
