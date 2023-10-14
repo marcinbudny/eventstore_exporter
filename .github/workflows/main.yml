@@ -11,14 +11,14 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
-    container: golang:1.20-buster
+    container: golang:1.21-buster
     
     steps:
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.1
+          version: v1.54.2
 
   test:
     strategy:
@@ -26,11 +26,12 @@ jobs:
         esVersion:
           - 21.10.8-buster-slim
           - 22.10.0-buster-slim
+          - 23.6.0-buster-slim
 
     name: tests on ES ${{ matrix.esVersion }}
 
     runs-on: ubuntu-latest
-    container: golang:1.20-buster
+    container: golang:1.21-buster
 
     services:
       eventstore:
