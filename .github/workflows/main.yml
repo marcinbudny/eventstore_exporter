@@ -11,7 +11,7 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
-    container: golang:1.21-buster
+    container: golang:1.21.3-bookworm
     
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +31,7 @@ jobs:
     name: tests on ES ${{ matrix.esVersion }}
 
     runs-on: ubuntu-latest
-    container: golang:1.21-buster
+    container: golang:1.21.3-bookworm
 
     services:
       eventstore:
