@@ -40,7 +40,6 @@ jobs:
       eventstore:
         image: eventstore/eventstore:${{ matrix.esVersion }}
         env:
-          EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
           EVENTSTORE_INSECURE: 'True'
           EVENTSTORE_RUN_PROJECTIONS: All
         # override eventstore healthcheck that does not work properly
