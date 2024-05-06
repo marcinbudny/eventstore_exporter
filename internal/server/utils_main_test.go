@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestMain(m *testing.M) {
@@ -30,17 +32,24 @@ func tryDetectEventStoreURL() {
 	if err == nil {
 		r.Body.Close()
 		os.Setenv("TEST_EVENTSTORE_URL", "https://localhost:2113")
-	} // else: ignore, we'll use default value
+		log.Infof("Using https://localhost:2113 as EventStore URL")
+		return
+	} else {
+		log.Infof("Failed to connect to EventStore at https://localhost:2113: %v", err)
+	}
 
+	log.Info("Using default EventStore URL")
 }
 
 func tryDetectClusterMode() {
 	if os.Getenv("TEST_CLUSTER_MODE") != "" {
+		log.Info("Tests running in cluster mode")
 		return // already set
 	}
 
 	// assume single node runs in insecure DEV config, while cluster runs over TLS
 	if strings.HasPrefix(os.Getenv("TEST_EVENTSTORE_URL"), "https://") {
 		os.Setenv("TEST_CLUSTER_MODE", "cluster")
+		log.Info("Detected tests in cluster mode")
 	} // else: ignore, we'll use default value
 }

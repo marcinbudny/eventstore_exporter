@@ -1,10 +1,7 @@
-version: '3'
-
 services:
   eventstore:
-    image: eventstore/eventstore:21.10.8-buster-slim
+    image: eventstore/eventstore:24.2.0-alpha-arm64v8 # eventstore/eventstore:24.2.0-bookworm-slim throws NullReferenceException on mac
     environment:
-      - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
       - EVENTSTORE_INSECURE=True
       - EVENTSTORE_RUN_PROJECTIONS=${EVENTSTORE_RUN_PROJECTIONS:-None}
       - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=${EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP:-True}
@@ -12,6 +9,15 @@ services:
       - 1113:1113
       - 2113:2113
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --insecure https://127.0.0.1/health/live || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 24
 
   prometheus:
     image: prom/prometheus:v2.39.1
