@@ -34,11 +34,8 @@ func tryDetectEventStoreURL() {
 		os.Setenv("TEST_EVENTSTORE_URL", "https://localhost:2113")
 		log.Infof("Using https://localhost:2113 as EventStore URL")
 		return
-	} else {
-		log.Infof("Failed to connect to EventStore at https://localhost:2113: %v", err)
 	}
-
-	log.Info("Using default EventStore URL")
+	log.Infof("Failed to connect to EventStore at https://localhost:2113, using default EventStore URL: %v", err)
 }
 
 func tryDetectClusterMode() {
