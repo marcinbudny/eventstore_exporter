@@ -1,113 +1,111 @@
-version: '3'
+x-eventstore-common: &eventstore-common
+  image: eventstore/eventstore:24.2.0-alpha-arm64v8
+  env_file:
+    - common-variables.env
+  volumes:
+    - ./certs:/certs
+  restart: unless-stopped
+  depends_on:
+    - setup
+  healthcheck:
+    test:
+      [
+        "CMD-SHELL",
+        "curl --fail --insecure https://127.0.0.1/health/live || exit 1",
+      ]
+    interval: 5s
+    timeout: 5s
+    retries: 24
 
 services:
+  setup:
+    image: eventstore/es-gencert-cli:1.0.2
+    entrypoint: bash
+    user: "1000:1000"
+    command: >
+      -c "mkdir -p ./certs && cd /certs
+      && es-gencert-cli create-ca
+      && es-gencert-cli create-node -out ./node1 -ip-addresses 127.0.0.1,172.16.1.11 -dns-names localhost
+      && es-gencert-cli create-node -out ./node2 -ip-addresses 127.0.0.1,172.16.1.12 -dns-names localhost
+      && es-gencert-cli create-node -out ./node3 -ip-addresses 127.0.0.1,172.16.1.13 -dns-names localhost
+      && es-gencert-cli create-node -out ./node4 -ip-addresses 127.0.0.1,172.16.1.14 -dns-names localhost
+      && es-gencert-cli create-node -out ./node5 -ip-addresses 127.0.0.1,172.16.1.15 -dns-names localhost
+      && find . -type f -print0 | xargs -0 chmod 666"
+    container_name: setup
+    volumes:
+      - ./certs:/certs
+
   eventstore1:
-    image: eventstore/eventstore:23.6.0-buster-slim
-    env_file:
-      - common-variables.env
+    <<: *eventstore-common
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.11
       - EVENTSTORE_HTTP_PORT=2113
-      - EVENTSTORE_EXT_TCP_PORT=1113
       - EVENTSTORE_NODE_PRIORITY=100
+      - EVENTSTORE_CERTIFICATE_FILE=/certs/node1/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node1/node.key
     ports:
-      - 1113:1113
       - 2113:2113
     networks:
       clusternetwork:
         ipv4_address: 172.16.1.11
-    volumes:
-      - ./certs:/certs
-    restart: unless-stopped
 
   eventstore2:
-    image: eventstore/eventstore:23.6.0-buster-slim
-    env_file:
-      - common-variables.env
+    <<: *eventstore-common
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.12
       - EVENTSTORE_HTTP_PORT=2123
-      - EVENTSTORE_EXT_TCP_PORT=1123
+      - EVENTSTORE_CERTIFICATE_FILE=/certs/node2/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node2/node.key
     ports:
-      - 1123:1123
       - 2123:2123
-    depends_on:
-      - eventstore1
     networks:
       clusternetwork:
         ipv4_address: 172.16.1.12
-    volumes:
-      - ./certs:/certs
-    restart: unless-stopped
-    entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore3:
-    image: eventstore/eventstore:23.6.0-buster-slim
-    env_file:
-      - common-variables.env
+    <<: *eventstore-common
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.13
       - EVENTSTORE_HTTP_PORT=2133
-      - EVENTSTORE_EXT_TCP_PORT=1133
+      - EVENTSTORE_CERTIFICATE_FILE=/certs/node3/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node3/node.key
     ports:
-      - 1133:1133
       - 2133:2133
-    depends_on:
-      - eventstore1
     networks:
       clusternetwork:
         ipv4_address: 172.16.1.13
-    volumes:
-      - ./certs:/certs
-    restart: unless-stopped
-    entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore4:
-    image: eventstore/eventstore:23.6.0-buster-slim
-    env_file:
-      - common-variables.env
+    <<: *eventstore-common
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133
       - EVENTSTORE_INT_IP=172.16.1.14
       - EVENTSTORE_HTTP_PORT=2143
-      - EVENTSTORE_EXT_TCP_PORT=1143
+      - EVENTSTORE_CERTIFICATE_FILE=/certs/node4/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node4/node.key
     ports:
-      - 1143:1143
       - 2143:2143
-    depends_on:
-      - eventstore1
     networks:
       clusternetwork:
         ipv4_address: 172.16.1.14
-    volumes:
-      - ./certs:/certs
-    restart: unless-stopped
-    entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   eventstore-ro-replica:
-    image: eventstore/eventstore:23.6.0-buster-slim
-    env_file:
-      - common-variables.env
+    <<: *eventstore-common
     environment:
       - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
       - EVENTSTORE_INT_IP=172.16.1.15
       - EVENTSTORE_HTTP_PORT=2153
-      - EVENTSTORE_EXT_TCP_PORT=1153
       - EVENTSTORE_READ_ONLY_REPLICA=True
+      - EVENTSTORE_CERTIFICATE_FILE=/certs/node5/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node5/node.key
     ports:
-      - 1153:1153
       - 2153:2153
-    depends_on:
-      - eventstore1
     networks:
       clusternetwork:
         ipv4_address: 172.16.1.15
-    volumes:
-      - ./certs:/certs
-    entrypoint: ['bash', '-c', 'sleep 5 && /opt/eventstore/eventstored']
 
   prometheus:
     image: prom/prometheus:v2.39.1

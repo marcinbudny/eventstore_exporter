@@ -1,8 +1,6 @@
-version: '3'
-
 services:
   eventstore:
-    image: eventstore/eventstore:23.6.0-buster-slim
+    image: eventstore/eventstore:23.10.1-bookworm-slim
     environment:
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
       - EVENTSTORE_INSECURE=True

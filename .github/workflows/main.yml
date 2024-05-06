@@ -27,9 +27,9 @@ jobs:
     strategy:
       matrix:
         esVersion:
-          - 21.10.8-buster-slim
-          - 22.10.0-buster-slim
-          - 23.6.0-buster-slim
+          - 22.10.5-bookworm-slim
+          - 23.10.1-bookworm-slim
+          - "24.2"
 
     name: tests on ES ${{ matrix.esVersion }}
 
@@ -40,7 +40,6 @@ jobs:
       eventstore:
         image: eventstore/eventstore:${{ matrix.esVersion }}
         env:
-          EVENTSTORE_ENABLE_EXTERNAL_TCP: 'True'
           EVENTSTORE_INSECURE: 'True'
           EVENTSTORE_RUN_PROJECTIONS: All
         # override eventstore healthcheck that does not work properly
