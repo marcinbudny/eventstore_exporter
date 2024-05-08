@@ -146,19 +146,18 @@ func getParkedMessagesLastEventNumber(ctx context.Context, grpcClient *esdb.Clie
 }
 
 func getParkedMessagesTruncateBeforeValue(ctx context.Context, grpcClient *esdb.Client, eventStreamID string, groupName string) (uint64, error) {
-	if meta, err := grpcClient.GetStreamMetadata(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{}); err == nil {
+	meta, err := grpcClient.GetStreamMetadata(ctx, parkedStreamID(eventStreamID, groupName), esdb.ReadStreamOptions{})
+	if err == nil {
 		return *meta.TruncateBefore(), nil
 	} else if strings.Contains(err.Error(), "not found") {
 		return 0, nil
-	} else {
-		log.WithError(err).WithFields(log.Fields{
-			"eventStreamId": eventStreamID,
-			"groupName":     groupName,
-		}).Error("Error when getting parked message stream metadata")
-
-		return 0, err
-
 	}
+	log.WithError(err).WithFields(log.Fields{
+		"eventStreamId": eventStreamID,
+		"groupName":     groupName,
+	}).Error("Error when getting parked message stream metadata")
+
+	return 0, err
 }
 
 func parkedStreamID(eventStreamID string, groupName string) string {
