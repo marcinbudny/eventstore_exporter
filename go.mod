@@ -16,10 +16,17 @@ require (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/containerd/continuity v0.4.3 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/moby/term v0.5.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/prometheus/procfs v0.14.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
