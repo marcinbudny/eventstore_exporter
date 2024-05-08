@@ -54,7 +54,7 @@ func (server *ExporterServer) serveLandingPage() {
 		</html>
 		`)
 
-	server.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	server.mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write(landingPage) // nolint: errcheck
 	})
 }
