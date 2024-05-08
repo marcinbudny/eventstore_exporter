@@ -46,9 +46,9 @@ eventstore_exporter \
 
 ### Supported EventStoreDB versions
 
-- 21.10 LTS
 - 22.10 LTS
-- 23.06
+- 23.10 LTS
+- 24.2
 
 Other versions may also work but are not tested.
 
@@ -75,7 +75,6 @@ The exporter can be configured with command line arguments, environment variable
 | --streams                      | STREAMS                      | (empty)                 | List of streams to get stats for e.g. `$all,my-stream`. Currently last event position / last event number is the only supported metric. |
 | --streams-separator            | STREAMS_SEPARATOR            | `,`                     | Single character separator for streams list provided in `--streams`. Change from default if your stream names contain commas.           |
 | --enable-tcp-connection-stats  | ENABLE_TCP_CONNECTION_STATS  | false                   | Enable scraping of TCP connection stats (connections between nodes in the cluster, TCP client connections, excluding gRPC)              |
-
 
 Sample configuration file
 
