@@ -18,7 +18,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "no parameters specified reults in defaults",
 			args: []string{},
 			expectedConfig: Config{
-				Timeout:                   time.Duration(10 * time.Second),
+				Timeout:                   time.Duration(8 * time.Second),
 				Port:                      9448,
 				Verbose:                   false,
 				InsecureSkipVerify:        false,

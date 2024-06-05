@@ -33,7 +33,7 @@ func Load(args []string, suppressOutput bool) (*Config, error) {
 	fs.StringVar(&config.EventStoreUser, "eventstore-user", "", "EventStore User")
 	fs.StringVar(&config.EventStorePassword, "eventstore-password", "", "EventStore Password")
 	fs.UintVar(&config.Port, "port", 9448, "Port to expose scraping endpoint on")
-	fs.DurationVar(&config.Timeout, "timeout", time.Second*10, "Timeout for the scrape operation")
+	fs.DurationVar(&config.Timeout, "timeout", time.Second*8, "Timeout for the scrape operation")
 	fs.BoolVar(&config.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&config.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificatte verification for EventStore HTTP client")
 	fs.BoolVar(&config.EnableParkedMessagesStats, "enable-parked-messages-stats", false, "Enable parked messages stats scraping")
