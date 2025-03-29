@@ -27,8 +27,9 @@ jobs:
     strategy:
       matrix:
         esVersion:
-          - 23.10.1-bookworm-slim
-          - 24.10.4-bookworm-slim
+          - eventstore/eventstore:23.10.1-bookworm-slim
+          - eventstore/eventstore:24.10.4-bookworm-slim
+          - docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.0.0
 
     name: tests on ES ${{ matrix.esVersion }}
 
@@ -37,10 +38,14 @@ jobs:
 
     services:
       eventstore:
-        image: eventstore/eventstore:${{ matrix.esVersion }}
+        image: ${{ matrix.esVersion }}
         env:
           EVENTSTORE_INSECURE: 'True'
           EVENTSTORE_RUN_PROJECTIONS: All
+          EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
+          KURRENTDB_INSECURE: 'True'
+          KURRENTDB_RUN_PROJECTIONS: All
+          KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
         # override eventstore healthcheck that does not work properly
         options: >-
           --health-cmd "sleep 5"

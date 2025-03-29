@@ -1,5 +1,5 @@
 x-eventstore-common: &eventstore-common
-  image: eventstore/eventstore:24.10.4-bookworm-slim
+  image: docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.0.0
   env_file:
     - common-variables.env
   volumes:
@@ -29,12 +29,12 @@ services:
   eventstore1:
     <<: *eventstore-common
     environment:
-      - EVENTSTORE_GOSSIP_SEED=172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_INT_IP=172.16.1.11
-      - EVENTSTORE_HTTP_PORT=2113
-      - EVENTSTORE_NODE_PRIORITY=100
-      - EVENTSTORE_CERTIFICATE_FILE=/certs/node1/node.crt
-      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node1/node.key
+      - KURRENTDB_GOSSIP_SEED=172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
+      - KURRENTDB_REPLICATION_IP=172.16.1.11
+      - KURRENTDB_NODE_PORT=2113
+      - KURRENTDB_NODE_PRIORITY=100
+      - KURRENTDB_CERTIFICATE_FILE=/certs/node1/node.crt
+      - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node1/node.key
     ports:
       - 2113:2113
     networks:
@@ -44,11 +44,11 @@ services:
   eventstore2:
     <<: *eventstore-common
     environment:
-      - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_INT_IP=172.16.1.12
-      - EVENTSTORE_HTTP_PORT=2123
-      - EVENTSTORE_CERTIFICATE_FILE=/certs/node2/node.crt
-      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node2/node.key
+      - KURRENTDB_GOSSIP_SEED=172.16.1.11:2113,172.16.1.13:2133,172.16.1.14:2143
+      - KURRENTDB_REPLICATION_IP=172.16.1.12
+      - KURRENTDB_NODE_PORT=2123
+      - KURRENTDB_CERTIFICATE_FILE=/certs/node2/node.crt
+      - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node2/node.key
     ports:
       - 2123:2123
     networks:
@@ -58,11 +58,11 @@ services:
   eventstore3:
     <<: *eventstore-common
     environment:
-      - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.14:2143
-      - EVENTSTORE_INT_IP=172.16.1.13
-      - EVENTSTORE_HTTP_PORT=2133
-      - EVENTSTORE_CERTIFICATE_FILE=/certs/node3/node.crt
-      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node3/node.key
+      - KURRENTDB_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.14:2143
+      - KURRENTDB_REPLICATION_IP=172.16.1.13
+      - KURRENTDB_NODE_PORT=2133
+      - KURRENTDB_CERTIFICATE_FILE=/certs/node3/node.crt
+      - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node3/node.key
     ports:
       - 2133:2133
     networks:
@@ -72,11 +72,11 @@ services:
   eventstore4:
     <<: *eventstore-common
     environment:
-      - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133
-      - EVENTSTORE_INT_IP=172.16.1.14
-      - EVENTSTORE_HTTP_PORT=2143
-      - EVENTSTORE_CERTIFICATE_FILE=/certs/node4/node.crt
-      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node4/node.key
+      - KURRENTDB_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133
+      - KURRENTDB_REPLICATION_IP=172.16.1.14
+      - KURRENTDB_NODE_PORT=2143
+      - KURRENTDB_CERTIFICATE_FILE=/certs/node4/node.crt
+      - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node4/node.key
     ports:
       - 2143:2143
     networks:
@@ -86,12 +86,12 @@ services:
   eventstore-ro-replica:
     <<: *eventstore-common
     environment:
-      - EVENTSTORE_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
-      - EVENTSTORE_INT_IP=172.16.1.15
-      - EVENTSTORE_HTTP_PORT=2153
-      - EVENTSTORE_READ_ONLY_REPLICA=True
-      - EVENTSTORE_CERTIFICATE_FILE=/certs/node5/node.crt
-      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node5/node.key
+      - KURRENTDB_GOSSIP_SEED=172.16.1.11:2113,172.16.1.12:2123,172.16.1.13:2133,172.16.1.14:2143
+      - KURRENTDB_REPLICATION_IP=172.16.1.15
+      - KURRENTDB_NODE_PORT=2153
+      - KURRENTDB_READ_ONLY_REPLICA=True
+      - KURRENTDB_CERTIFICATE_FILE=/certs/node5/node.crt
+      - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node5/node.key
     ports:
       - 2153:2153
     networks:

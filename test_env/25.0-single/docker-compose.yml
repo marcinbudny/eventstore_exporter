@@ -1,12 +1,11 @@
 services:
-  eventstore:
-    image: eventstore/eventstore:24.10.4-bookworm-slim
+  kurrentdb:
+    image: docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.0.0
     environment:
-      - EVENTSTORE_INSECURE=True
-      - EVENTSTORE_RUN_PROJECTIONS=${EVENTSTORE_RUN_PROJECTIONS:-None}
-      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=${EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP:-True}
+      - KURRENTDB_INSECURE=True
+      - KURRENTDB_RUN_PROJECTIONS=${EVENTSTORE_RUN_PROJECTIONS:-None}
+      - KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP=${EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP:-True}
     ports:
-      - 1113:1113
       - 2113:2113
     restart: unless-stopped
 
