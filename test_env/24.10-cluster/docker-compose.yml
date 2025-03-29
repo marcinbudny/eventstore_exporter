@@ -1,5 +1,5 @@
 x-eventstore-common: &eventstore-common
-  image: eventstore/eventstore:24.2.0-alpha-arm64v8
+  image: eventstore/eventstore:24.10.4-bookworm-slim
   env_file:
     - common-variables.env
   volumes:

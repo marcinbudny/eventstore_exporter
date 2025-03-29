@@ -46,9 +46,8 @@ eventstore_exporter \
 
 ### Supported EventStoreDB versions
 
-- 22.10 LTS
 - 23.10 LTS
-- 24.2
+- 24.10 LTS
 
 Other versions may also work but are not tested.
 
