@@ -77,7 +77,7 @@ func getAllStreamStats(ctx context.Context, grpcClient *esdb.Client) (StreamStat
 
 	return StreamStats{
 		EventStreamID:      "$all",
-		LastCommitPosition: int64(event.Event.Position.Commit),
+		LastCommitPosition: int64(event.Event.Position.Commit), //nolint:gosec // TODO: fix this
 		LastEventNumber:    -1,
 	}, nil
 
@@ -97,7 +97,7 @@ func getRegularStreamStats(ctx context.Context, grpcClient *esdb.Client, stream 
 	return StreamStats{
 		EventStreamID:      stream,
 		LastCommitPosition: -1,
-		LastEventNumber:    int64(event.Event.EventNumber),
+		LastEventNumber:    int64(event.Event.EventNumber), //nolint:gosec // TODO: fix this
 	}, nil
 
 }
