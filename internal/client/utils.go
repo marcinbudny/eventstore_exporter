@@ -27,7 +27,7 @@ func (client *EventStoreStatsClient) esHTTPGet(ctx context.Context, path string,
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode == 404 && acceptNotFound {
+	if response.StatusCode == http.StatusNotFound && acceptNotFound {
 		return nil, nil
 	}
 
