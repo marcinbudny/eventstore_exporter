@@ -1,9 +1,12 @@
-# EventStoreDB Prometheus exporter
+# KurrentDB / EventStoreDB Prometheus exporter
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/marcinbudny/eventstore_exporter)](https://goreportcard.com/report/github.com/marcinbudny/eventstore_exporter)
 [![CI](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml/badge.svg)](https://github.com/marcinbudny/eventstore_exporter/actions/workflows/main.yml)
 
-EventStoreDB (<https://eventstore.com/eventstoredb/>) metrics Prometheus exporter.
+KurrentDB (<https://www.kurrent.io/>) metrics Prometheus exporter.
+
+> [!NOTE]
+> KurrentDB is the new name of EventStoreDB, starting with version 25.0. This exporter supports older LTS versions too, see [Supported KurrentDB versions](#supported-kurrentdb-versions).
 
 ## Installation
 
@@ -44,19 +47,23 @@ eventstore_exporter \
     --enable-parked-messages-stats
 ```
 
-### Supported EventStoreDB versions
+### Supported KurrentDB versions
 
-- 23.10 LTS
-- 24.10 LTS
+- EventStoreDB 23.10 LTS
+- EventStoreDB 24.10 LTS
+- KurrentDB 25.0
 
 Other versions may also work but are not tested.
 
 ### Unsupported versions
 
-- 5.0 (last supported in exporter version v0.10.4)
-- 20.10 LTS (last supported in exporter version v0.15.1)
+- EventStoreDB 5.0 (last supported in exporter version v0.10.4)
+- EventStoreDB 20.10 LTS (last supported in exporter version v0.15.1)
 
 ## Configuration
+
+> [!NOTE]
+> Since EventStoreDB was renamed to KurrentDB, also its configuration settings now use the `KURRENTDB_` prefix. This exporter however does not follow this change (for now) and any configuration settings that have `EVENTSTORE_` prefix are the same regardless if connecting to KurrentDB or older EventStoreDB version.
 
 The exporter can be configured with command line arguments, environment variables and a configuration file. For the details on how to format the configuration file, visit [namsral/flag](https://github.com/namsral/flag) repo.
 
@@ -96,6 +103,9 @@ Can be found [here](https://grafana.com/dashboards/7673)
 ![EventStore Grafana dashboard](dashboard.png)
 
 ## Exported metrics
+
+> [!NOTE]
+> Since EventStoreDB was renamed to KurrentDB, also its native Prometheus metrics now use `kurrentdb_` prefix. This exporter however does not follow this change (for now) and any metrics that have `eventstore_` prefix are the same regardless if connecting to KurrentDB or older EventStoreDB version.
 
 Let me know if there is a metric you would like to be added.
 
