@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v4/esdb"
 	"github.com/marcinbudny/eventstore_exporter/internal/config"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"

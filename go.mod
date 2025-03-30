@@ -3,7 +3,7 @@ module github.com/marcinbudny/eventstore_exporter
 go 1.24
 
 require (
-	github.com/EventStore/EventStore-Client-Go/v3 v3.3.0
+	github.com/EventStore/EventStore-Client-Go/v4 v4.2.0
 	github.com/gofrs/uuid/v5 v5.3.2
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-version v1.7.0
@@ -19,10 +19,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/containerd/continuity v0.4.5 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
-	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect

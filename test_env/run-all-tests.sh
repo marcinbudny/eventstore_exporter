@@ -51,19 +51,19 @@ for version in "${versions[@]}"
 do
     echo "Setting up ES $version - SINGLE"
     EVENTSTORE_RUN_PROJECTIONS=None docker compose -f "$version"-single/docker-compose.yml up -d
-    sleep 15
+    sleep 10
     run_test_with_retry "ES $version - SINGLE"
     docker compose -f "$version"-single/docker-compose.yml down
 
     echo "Setting up ES $version - SINGLE - WITH PROJECTIONS"
     EVENTSTORE_RUN_PROJECTIONS=All docker compose -f "$version"-single/docker-compose.yml up -d
-    sleep 15
+    sleep 10
     run_test_with_retry "ES $version - SINGLE - WITH PROJECTIONS"
     docker compose -f "$version"-single/docker-compose.yml down
 
     echo "Setting up ES $version - CLUSTER"
     docker compose -f "$version"-cluster/docker-compose.yml up -d
-    sleep 20
+    sleep 15
     run_test_with_retry "ES $version - CLUSTER"
     docker compose -f "$version"-cluster/docker-compose.yml down
 done
