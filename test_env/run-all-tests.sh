@@ -6,7 +6,7 @@ declare -a test_attempts
 
 MAX_ATTEMPTS=3
 
-versions=("23.10" "24.10")
+versions=("23.10" "24.10" "25.0")
 
 for version in "${versions[@]}"
 do
@@ -51,13 +51,13 @@ for version in "${versions[@]}"
 do
     echo "Setting up ES $version - SINGLE"
     EVENTSTORE_RUN_PROJECTIONS=None docker compose -f "$version"-single/docker-compose.yml up -d
-    sleep 5
+    sleep 15
     run_test_with_retry "ES $version - SINGLE"
     docker compose -f "$version"-single/docker-compose.yml down
 
     echo "Setting up ES $version - SINGLE - WITH PROJECTIONS"
     EVENTSTORE_RUN_PROJECTIONS=All docker compose -f "$version"-single/docker-compose.yml up -d
-    sleep 5
+    sleep 15
     run_test_with_retry "ES $version - SINGLE - WITH PROJECTIONS"
     docker compose -f "$version"-single/docker-compose.yml down
 
