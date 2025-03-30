@@ -48,9 +48,9 @@ jobs:
           KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP: 'True'
         # override eventstore healthcheck that does not work properly
         options: >-
-          --health-cmd "sleep 5"
-          --health-interval 10s
-          --health-timeout 10s
+          --health-cmd "sleep 10"
+          --health-interval 15s
+          --health-timeout 15s
           --health-retries 5
 
     steps:
