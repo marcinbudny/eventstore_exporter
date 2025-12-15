@@ -39,6 +39,10 @@ type Collector struct {
 	driveTotalBytes     *prometheus.Desc
 	driveAvailableBytes *prometheus.Desc
 
+	sysLoadAvg          *prometheus.Desc
+	sysFreeMemoryBytes  *prometheus.Desc
+	sysTotalMemoryBytes *prometheus.Desc
+
 	projectionRunning                     *prometheus.Desc
 	projectionStatus                      *prometheus.Desc
 	projectionProgress                    *prometheus.Desc
@@ -92,6 +96,10 @@ func NewCollector(config *config.Config, client *client.EventStoreStatsClient) *
 		driveTotalBytes:     prometheus.NewDesc("eventstore_drive_total_bytes", "Drive total size in bytes", []string{"drive"}, nil),
 		driveAvailableBytes: prometheus.NewDesc("eventstore_drive_available_bytes", "Drive available bytes", []string{"drive"}, nil),
 
+		sysLoadAvg:          prometheus.NewDesc("eventstore_sys_loadavg", "System load average", []string{"period"}, nil),
+		sysFreeMemoryBytes:  prometheus.NewDesc("eventstore_sys_free_memory_bytes", "System free memory in bytes", nil, nil),
+		sysTotalMemoryBytes: prometheus.NewDesc("eventstore_sys_total_memory_bytes", "System total memory in bytes", nil, nil),
+
 		projectionRunning:                     prometheus.NewDesc("eventstore_projection_running", "If 1, projection is in 'Running' state", []string{"projection"}, nil),
 		projectionStatus:                      prometheus.NewDesc("eventstore_projection_status", "If 1, projection is in specified state", []string{"projection", "status"}, nil),
 		projectionProgress:                    prometheus.NewDesc("eventstore_projection_progress", "Projection progress 0 - 1, where 1 = projection progress at 100%", []string{"projection"}, nil),
@@ -144,6 +152,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.driveTotalBytes
 	ch <- c.driveAvailableBytes
 
+	ch <- c.sysLoadAvg
+	ch <- c.sysFreeMemoryBytes
+	ch <- c.sysTotalMemoryBytes
+
 	ch <- c.projectionRunning
 	ch <- c.projectionStatus
 	ch <- c.projectionProgress
@@ -190,6 +202,7 @@ func (c *Collector) collectFromStats(ch chan<- prometheus.Metric, stats *client.
 	c.collectFromTCPConnectionStats(ch, stats.TCPConnections)
 	c.collectFromQueueStats(ch, stats.Server.Es.Queues)
 	c.collectFromDriveStats(ch, stats.Server.System.Drives)
+	c.collectFromSystemStats(ch, stats.Server.System)
 	c.collectFromProjectionStats(ch, stats.Projections)
 	c.collectFromSubscriptionStats(ch, stats.Subscriptions)
 	c.collectFromStreamStats(ch, stats.Streams)
@@ -238,6 +251,15 @@ func (c *Collector) collectFromDriveStats(ch chan<- prometheus.Metric, stats map
 		ch <- prometheus.MustNewConstMetric(c.driveTotalBytes, prometheus.GaugeValue, float64(drive.TotalBytes), driveName)
 		ch <- prometheus.MustNewConstMetric(c.driveAvailableBytes, prometheus.GaugeValue, float64(drive.AvailableBytes), driveName)
 	}
+}
+
+func (c *Collector) collectFromSystemStats(ch chan<- prometheus.Metric, stats client.SystemStats) {
+	ch <- prometheus.MustNewConstMetric(c.sysLoadAvg, prometheus.GaugeValue, stats.LoadAvg.OneMin, "1m")
+	ch <- prometheus.MustNewConstMetric(c.sysLoadAvg, prometheus.GaugeValue, stats.LoadAvg.FiveMin, "5m")
+	ch <- prometheus.MustNewConstMetric(c.sysLoadAvg, prometheus.GaugeValue, stats.LoadAvg.FifteenMin, "15m")
+
+	ch <- prometheus.MustNewConstMetric(c.sysFreeMemoryBytes, prometheus.GaugeValue, float64(stats.FreeMem))
+	ch <- prometheus.MustNewConstMetric(c.sysTotalMemoryBytes, prometheus.GaugeValue, float64(stats.TotalMem))
 }
 
 func (c *Collector) collectFromProjectionStats(ch chan<- prometheus.Metric, stats []client.ProjectionStats) {

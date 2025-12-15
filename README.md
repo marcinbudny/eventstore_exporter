@@ -260,6 +260,20 @@ eventstore_tcp_connection_received_bytes{client_name="ES-8d3d28dd-7944-49b4-a130
 # TYPE eventstore_tcp_connection_sent_bytes counter
 eventstore_tcp_connection_sent_bytes{client_name="ES-8d3d28dd-7944-49b4-a130-686cc9aecc92",external="true",id="7d7f9762-9565-4cca-8bdf-2dc7c845c19a",local_endpoint="172.16.1.11:1113",remote_endpoint="172.16.1.1:59230",ssl="false"} 252635
 
+# HELP eventstore_sys_free_memory_bytes System free memory in bytes
+# TYPE eventstore_sys_free_memory_bytes gauge
+eventstore_sys_free_memory_bytes 2.502856704e+09
+
+# HELP eventstore_sys_total_memory_bytes System total memory in bytes
+# TYPE eventstore_sys_total_memory_bytes gauge
+eventstore_sys_total_memory_bytes 1.6656265216e+10
+
+# HELP eventstore_sys_loadavg System load average
+# TYPE eventstore_sys_loadavg gauge
+eventstore_sys_loadavg{period="15m"} 0.35
+eventstore_sys_loadavg{period="1m"} 0.72
+eventstore_sys_loadavg{period="5m"} 0.52
+
 # HELP eventstore_up Whether the EventStore scrape was successful
 # TYPE eventstore_up gauge
 eventstore_up 1
