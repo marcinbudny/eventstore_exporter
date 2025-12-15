@@ -584,6 +584,223 @@
         "x": 0,
         "y": 11
       },
+      "id": 30,
+      "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "my_prometheus"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "System",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "my_prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "hiddenSeries": false,
+      "id": 31,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.7",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "my_prometheus"
+          },
+          "expr": "eventstore_sys_loadavg{instance=\"$instance\"}",
+          "legendFormat": "{{period}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "System Load Average",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "my_prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "hiddenSeries": false,
+      "id": 32,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.7",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "my_prometheus"
+          },
+          "expr": "eventstore_sys_free_memory_bytes{instance=\"$instance\"}",
+          "legendFormat": "Free",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "my_prometheus"
+          },
+          "expr": "eventstore_sys_total_memory_bytes{instance=\"$instance\"}",
+          "legendFormat": "Total",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "System Memory",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "my_prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
       "id": 17,
       "panels": [],
       "targets": [
@@ -619,7 +836,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 7,
@@ -784,7 +1001,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 18
       },
       "id": 6,
       "links": [],
@@ -857,7 +1074,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 23
       },
       "hiddenSeries": false,
       "id": 8,
@@ -945,7 +1162,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 28
       },
       "id": 21,
       "panels": [],
@@ -982,7 +1199,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 29
       },
       "hiddenSeries": false,
       "id": 23,
@@ -1081,7 +1298,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 29
       },
       "hiddenSeries": false,
       "id": 25,
@@ -1182,7 +1399,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 26,
@@ -1377,7 +1594,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 36
       },
       "id": 27,
       "links": [],
@@ -1443,7 +1660,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 43
       },
       "id": 18,
       "panels": [],
@@ -1480,7 +1697,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 9,
@@ -1590,7 +1807,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 10,
@@ -1689,7 +1906,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 51
       },
       "id": 19,
       "panels": [],
@@ -1726,7 +1943,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 46
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 13,
@@ -1823,7 +2040,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 14,
