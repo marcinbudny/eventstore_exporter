@@ -51,7 +51,7 @@ eventstore_exporter \
 
 - EventStoreDB 23.10 LTS
 - EventStoreDB 24.10 LTS
-- KurrentDB 25.0
+- KurrentDB 25.1
 
 Other versions may also work but are not tested.
 
@@ -263,4 +263,24 @@ eventstore_tcp_connection_sent_bytes{client_name="ES-8d3d28dd-7944-49b4-a130-686
 # HELP eventstore_up Whether the EventStore scrape was successful
 # TYPE eventstore_up gauge
 eventstore_up 1
+```
+
+## Development
+
+### Test environments
+
+The test environments (for supported KurrentDB versions) are located in the `test_env` directory. It uses `docker-compose` to start a cluster of Kurrent nodes, Prometheus and Grafana instance.
+
+```bash
+docker-compose -f test_env/24.10-cluster/docker-compose.yml up -d
+docker-compose -f test_env/24.10-cluster/docker-compose.yml down
+```
+
+### Running all tests
+
+This will run all test suites on all supported versions of KurrentDB. Note, it will remove existing test environments if you have any running.
+
+```bash
+cd test_env
+./run-all-tests.sh
 ```

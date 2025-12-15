@@ -22,7 +22,7 @@ services:
     volumes:
       - ../common/prometheus-config:/etc/prometheus/
     ports:
-      - 9090:9090
+      - 19090:9090
 
   grafana:
     image: grafana/grafana:9.1.7

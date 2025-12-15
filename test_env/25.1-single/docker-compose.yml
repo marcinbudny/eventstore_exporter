@@ -1,6 +1,6 @@
 services:
   kurrentdb:
-    image: docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.0.0
+    image: docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.1
     environment:
       - KURRENTDB_INSECURE=True
       - KURRENTDB_RUN_PROJECTIONS=${EVENTSTORE_RUN_PROJECTIONS:-None}

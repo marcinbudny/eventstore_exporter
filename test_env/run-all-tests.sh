@@ -6,7 +6,7 @@ declare -a test_attempts
 
 MAX_ATTEMPTS=3
 
-versions=("23.10" "24.10" "25.0")
+versions=("23.10" "24.10" "25.1")
 
 for version in "${versions[@]}"
 do
