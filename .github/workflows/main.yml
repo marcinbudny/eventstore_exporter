@@ -29,7 +29,7 @@ jobs:
         esVersion:
           - eventstore/eventstore:23.10.1-bookworm-slim
           - eventstore/eventstore:24.10.4-bookworm-slim
-          - docker.cloudsmith.io/eventstore/kurrent-latest/kurrentdb:25.0.0
+          - kurrentplatform/kurrentdb:25.1
 
     name: tests on ES ${{ matrix.esVersion }}
 

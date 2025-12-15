@@ -1,6 +1,6 @@
 services:
   eventstore:
-    image: eventstore/eventstore:24.10.4-bookworm-slim
+    image: eventstore/eventstore:24.10
     environment:
       - EVENTSTORE_INSECURE=True
       - EVENTSTORE_RUN_PROJECTIONS=${EVENTSTORE_RUN_PROJECTIONS:-None}
