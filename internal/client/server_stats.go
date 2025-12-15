@@ -31,7 +31,16 @@ type TCPStats struct {
 }
 
 type SystemStats struct {
-	Drives map[string]DriveStats `json:"drive"`
+	Drives   map[string]DriveStats `json:"drive"`
+	LoadAvg  LoadAvgStats          `json:"loadavg"`
+	FreeMem  int64                 `json:"freeMem"`
+	TotalMem int64                 `json:"totalMem"`
+}
+
+type LoadAvgStats struct {
+	OneMin     float64 `json:"1m"`
+	FiveMin    float64 `json:"5m"`
+	FifteenMin float64 `json:"15m"`
 }
 
 type DriveStats struct {
