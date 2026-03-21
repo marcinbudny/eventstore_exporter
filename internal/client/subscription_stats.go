@@ -101,7 +101,7 @@ func getParkedMessagesStats(ctx context.Context, grpc *esdb.Client, eventStreamI
 		oldestAgeInSec, _ = getOldestParkedMessageAgeInSeconds(ctx, grpc, eventStreamID, groupName, oldestMessagePosition)
 	}
 
-	numParked = int64(totalNumberOfParkedMessages)
+	numParked = int64(totalNumberOfParkedMessages) // nolint:gosec // -1 is a valid value for this metric in the exporter
 
 	return
 }
